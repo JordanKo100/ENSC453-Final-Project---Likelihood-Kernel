@@ -1,0 +1,195 @@
+
+****** Vitis HLS - High-Level Synthesis from C, C++ and OpenCL v2020.2 (64-bit)
+  **** SW Build 3064766 on Wed Nov 18 09:12:47 MST 2020
+  **** IP Build 3064653 on Wed Nov 18 14:17:31 MST 2020
+    ** Copyright 1986-2020 Xilinx, Inc. All Rights Reserved.
+
+source /mnt/share/tools/Xilinx/Vitis_HLS/2020.2/scripts/vitis_hls/hls.tcl -notrace
+INFO: Applying HLS Y2K22 patch v1.2 for IP revision
+INFO: [HLS 200-10] Running '/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/bin/unwrapped/lnx64.o/vitis_hls'
+INFO: [HLS 200-10] For user 'rkk10' on host 'ensc-rla-37.engineering.sfu.ca' (Linux_x86_64 version 5.4.0-152-generic) on Sun Mar 22 20:49:38 PDT 2026
+INFO: [HLS 200-10] On os Ubuntu 18.04.6 LTS
+INFO: [HLS 200-10] In directory '/local-scratch/localhome/rkk10/Downloads/proj_7/proj_7/mem-opt'
+Sourcing Tcl script 'run_hls.tcl'
+INFO: [HLS 200-1510] Running: open_project likelihood_memopt.prj -reset 
+INFO: [HLS 200-10] Opening and resetting project '/local-scratch/localhome/rkk10/Downloads/proj_7/proj_7/mem-opt/likelihood_memopt.prj'.
+WARNING: [HLS 200-40] No /local-scratch/localhome/rkk10/Downloads/proj_7/proj_7/mem-opt/likelihood_memopt.prj/solution1/solution1.aps file found.
+INFO: [HLS 200-1510] Running: set_top likelihood_kernel 
+INFO: [HLS 200-1510] Running: add_files likelihood_kernel.cpp 
+INFO: [HLS 200-10] Adding design file 'likelihood_kernel.cpp' to the project
+INFO: [HLS 200-1510] Running: add_files likelihood_kernel.h 
+INFO: [HLS 200-10] Adding design file 'likelihood_kernel.h' to the project
+INFO: [HLS 200-1510] Running: add_files -tb likelihood_tb.cpp 
+INFO: [HLS 200-10] Adding test bench file 'likelihood_tb.cpp' to the project
+INFO: [HLS 200-1510] Running: open_solution solution1 
+INFO: [HLS 200-10] Creating and opening solution '/local-scratch/localhome/rkk10/Downloads/proj_7/proj_7/mem-opt/likelihood_memopt.prj/solution1'.
+INFO: [HLS 200-1505] Using default flow_target 'vivado'
+Resolution: For help on HLS 200-1505 see www.xilinx.com/cgi-bin/docs/rdoc?v=2020.2;t=hls+guidance;d=200-1505.html
+INFO: [HLS 200-1510] Running: set_part xcu50-fsvh2104-2-e 
+INFO: [HLS 200-10] Setting target device to 'xcu50-fsvh2104-2-e'
+INFO: [HLS 200-1510] Running: create_clock -period 3.33 
+INFO: [SYN 201-201] Setting up clock 'default' with a period of 3.33ns.
+INFO: [HLS 200-1510] Running: csim_design 
+INFO: [SIM 211-2] *************** CSIM start ***************
+INFO: [SIM 211-4] CSIM will launch GCC as the compiler.
+   Compiling ../../../../likelihood_tb.cpp in debug mode
+   Compiling ../../../../likelihood_kernel.cpp in debug mode
+   Generating csim.exe
+countOnes = 69
+Kernel execution time: 7.0019e-05 s
+Max absolute error: 0
+particle[0]  HW = 29.1617391304   REF = 29.1617391304
+particle[1]  HW = -23.3739130435   REF = -23.3739130435
+particle[2]  HW = -25.8226086957   REF = -25.8226086957
+particle[3]  HW = 2.00347826087   REF = 2.00347826087
+particle[4]  HW = -12.2434782609   REF = -12.2434782609
+TEST PASSED
+INFO: [SIM 211-1] CSim done with 0 errors.
+INFO: [SIM 211-3] *************** CSIM finish ***************
+INFO: [HLS 200-111] Finished Command csim_design CPU user time: 2.07 seconds. CPU system time: 0.38 seconds. Elapsed time: 1.8 seconds; current allocated memory: 167.134 MB.
+INFO: [HLS 200-1510] Running: csynth_design 
+INFO: [HLS 200-111] Finished File checks and directory preparation: CPU user time: 0 seconds. CPU system time: 0 seconds. Elapsed time: 0 seconds; current allocated memory: 167.353 MB.
+INFO: [HLS 200-10] Analyzing design file 'likelihood_kernel.cpp' ... 
+INFO: [HLS 200-111] Finished Source Code Analysis and Preprocessing: CPU user time: 1.45 seconds. CPU system time: 0.24 seconds. Elapsed time: 1.87 seconds; current allocated memory: 169.024 MB.
+INFO: [HLS 200-777] Using interface defaults for 'Vivado' flow target.
+INFO: [HLS 214-131] Inlining function 'load_objxy(double const*, double*, int)' into 'likelihood_kernel' (likelihood_kernel.cpp:223:2)
+INFO: [HLS 214-131] Inlining function 'store_likelihood(ap_uint<512>*, double const*, int, int)' into 'likelihood_kernel' (likelihood_kernel.cpp:240:3)
+INFO: [HLS 214-131] Inlining function 'load_particles(ap_uint<512> const*, ap_uint<512> const*, double*, double*, int, int)' into 'likelihood_kernel' (likelihood_kernel.cpp:236:3)
+INFO: [HLS 214-131] Inlining function 'compute_likelihood(double const*, double const*, double const*, int, int, int, int, long, int const*, double*, int)' into 'likelihood_kernel' (likelihood_kernel.cpp:238:3)
+INFO: [HLS 214-186] Unrolling loop 'unpackWord' (likelihood_kernel.cpp:75:13) in function 'likelihood_kernel' completely with a factor of 8 (likelihood_kernel.cpp:75:13)
+INFO: [HLS 214-186] Unrolling loop 'packWord' (likelihood_kernel.cpp:159:9) in function 'likelihood_kernel' completely with a factor of 8 (likelihood_kernel.cpp:159:9)
+INFO: [HLS 214-178] Inlining function 'fp_struct<double>::fp_struct(double)' into 'int generic_cast_IEEE754<int, (ap_q_mode)6, double>(double, bool, hls::enable_if<std::numeric_limits<int>::is_signed, bool>::type)' (/wrk/ci/prod/2020.2/rdi_builds/continuous/2020_11_18_3064766/src/shared/hls/clib/hlsmath/include/FloatingPoint/hls_case_IEEE754.h:12:0)
+INFO: [HLS 214-178] Inlining function 'fp_struct<double>::mantissa() const' into 'int generic_cast_IEEE754<int, (ap_q_mode)6, double>(double, bool, hls::enable_if<std::numeric_limits<int>::is_signed, bool>::type)' (/wrk/ci/prod/2020.2/rdi_builds/continuous/2020_11_18_3064766/src/shared/hls/clib/hlsmath/include/FloatingPoint/hls_case_IEEE754.h:12:0)
+INFO: [HLS 214-178] Inlining function 'fp_struct<double>::expv() const' into 'int generic_cast_IEEE754<int, (ap_q_mode)6, double>(double, bool, hls::enable_if<std::numeric_limits<int>::is_signed, bool>::type)' (/wrk/ci/prod/2020.2/rdi_builds/continuous/2020_11_18_3064766/src/shared/hls/clib/hlsmath/include/FloatingPoint/hls_case_IEEE754.h:12:0)
+INFO: [HLS 214-178] Inlining function 'fp_struct<double>::__signbit() const' into 'int generic_cast_IEEE754<int, (ap_q_mode)6, double>(double, bool, hls::enable_if<std::numeric_limits<int>::is_signed, bool>::type)' (/wrk/ci/prod/2020.2/rdi_builds/continuous/2020_11_18_3064766/src/shared/hls/clib/hlsmath/include/FloatingPoint/hls_case_IEEE754.h:12:0)
+INFO: [HLS 214-178] Inlining function 'int generic_cast_IEEE754<int, (ap_q_mode)6, double>(double, bool, hls::enable_if<std::numeric_limits<int>::is_signed, bool>::type)' into 'int generic_cast_IEEE754<int, double>(double, bool)' (/wrk/ci/prod/2020.2/rdi_builds/continuous/2020_11_18_3064766/src/shared/hls/clib/hlsmath/include/FloatingPoint/hls_case_IEEE754.h:116:0)
+INFO: [HLS 214-178] Inlining function 'int generic_cast_IEEE754<int, double>(double, bool)' into '__hls_fptosi_double_i32' (/wrk/ci/prod/2020.2/rdi_builds/continuous/2020_11_18_3064766/src/shared/hls/clib/hlsmath/src/lib_floatconversion.cpp:55:0)
+INFO: [HLS 214-178] Inlining function '__hls_fptosi_double_i32' into 'roundDouble(double)' (likelihood_kernel.cpp:13:0)
+INFO: [HLS 214-178] Inlining function 'bits_to_double(unsigned long)' into 'likelihood_kernel' (likelihood_kernel.cpp:187:0)
+INFO: [HLS 214-178] Inlining function 'double_to_bits(double)' into 'likelihood_kernel' (likelihood_kernel.cpp:187:0)
+WARNING: [HLS 214-205] The INTERFACE pragma must have a max_widen_bitwidth setting that is both a power of 2 and in the range [0, 1024]. The current value of '0' will be ignored, in 'likelihood_kernel' (likelihood_kernel.cpp:187:0)
+WARNING: [HLS 214-205] The INTERFACE pragma must have a max_widen_bitwidth setting that is both a power of 2 and in the range [0, 1024]. The current value of '0' will be ignored, in 'likelihood_kernel' (likelihood_kernel.cpp:187:0)
+WARNING: [HLS 214-205] The INTERFACE pragma must have a max_widen_bitwidth setting that is both a power of 2 and in the range [0, 1024]. The current value of '0' will be ignored, in 'likelihood_kernel' (likelihood_kernel.cpp:187:0)
+WARNING: [HLS 214-205] The INTERFACE pragma must have a max_widen_bitwidth setting that is both a power of 2 and in the range [0, 1024]. The current value of '0' will be ignored, in 'likelihood_kernel' (likelihood_kernel.cpp:187:0)
+WARNING: [HLS 214-205] The INTERFACE pragma must have a max_widen_bitwidth setting that is both a power of 2 and in the range [0, 1024]. The current value of '0' will be ignored, in 'likelihood_kernel' (likelihood_kernel.cpp:187:0)
+INFO: [HLS 214-115] Multiple burst writes of variable length and bit width 512 in loop 'storeLikelihoodWide'(likelihood_kernel.cpp:152:5) has been inferred on port 'gmem4' (likelihood_kernel.cpp:152:5)
+INFO: [HLS 214-131] Inlining function '_llvm.fpga.pack.none.i512.s_struct.ap_uints' into 'likelihood_kernel' (likelihood_kernel.cpp:165:35)
+INFO: [HLS 200-111] Finished Compiling Optimization and Transform: CPU user time: 2.13 seconds. CPU system time: 0.25 seconds. Elapsed time: 2.53 seconds; current allocated memory: 171.074 MB.
+INFO: [HLS 200-111] Finished Checking Pragmas: CPU user time: 0 seconds. CPU system time: 0 seconds. Elapsed time: 0 seconds; current allocated memory: 171.076 MB.
+INFO: [HLS 200-10] Starting code transformations ...
+INFO: [HLS 200-111] Finished Standard Transforms: CPU user time: 0.09 seconds. CPU system time: 0.02 seconds. Elapsed time: 0.12 seconds; current allocated memory: 186.557 MB.
+INFO: [HLS 200-10] Checking synthesizability ...
+INFO: [XFORM 203-602] Inlining function 'roundDouble' into 'likelihood_kernel' (likelihood_kernel.cpp:110) automatically.
+INFO: [HLS 200-111] Finished Checking Synthesizability: CPU user time: 0.18 seconds. CPU system time: 0 seconds. Elapsed time: 0.19 seconds; current allocated memory: 208.663 MB.
+INFO: [XFORM 203-502] Unrolling all sub-loops inside loop 'Particle_loop' (likelihood_kernel.cpp:227) in function 'likelihood_kernel' for pipelining.
+WARNING: [XFORM 203-505] Ignored pipeline directive for loop 'loadParticlesWide' (likelihood_kernel.cpp:66) because its parent loop or function is pipelined.
+WARNING: [XFORM 203-503] Ignored partial unroll directive for loop 'loadParticlesWide' (likelihood_kernel.cpp:66) because its parent loop or function is pipelined.
+WARNING: [XFORM 203-503] Ignored partial unroll directive for loop 'accumulatePoints' (likelihood_kernel.cpp:112) because its parent loop or function is pipelined.
+WARNING: [XFORM 203-503] Ignored partial unroll directive for loop 'storeLikelihoodWide' (likelihood_kernel.cpp:152) because its parent loop or function is pipelined.
+WARNING: [XFORM 203-503] Ignored partial unroll directive for loop 'storeLikelihoodRemainder' (likelihood_kernel.cpp:169) because its parent loop or function is pipelined.
+WARNING: [XFORM 203-561] Updating loop lower bound from 140 to 160 for loop 'loadObjxy' (likelihood_kernel.cpp:43:12) in function 'likelihood_kernel'.
+INFO: [HLS 200-489] Unrolling loop 'loadParticlesWide' (likelihood_kernel.cpp:66) in function 'likelihood_kernel' completely with a factor of 8.
+WARNING: [HLS 200-936] Cannot unroll loop 'computeParticles' (likelihood_kernel.cpp:107) in function 'likelihood_kernel': cannot completely unroll a loop with a variable trip count.
+Resolution: For help on HLS 200-936 see www.xilinx.com/cgi-bin/docs/rdoc?v=2020.2;t=hls+guidance;d=200-936.html
+WARNING: [HLS 200-936] Cannot unroll loop 'accumulatePoints' (likelihood_kernel.cpp:112) in function 'likelihood_kernel': cannot completely unroll a loop with a variable trip count.
+Resolution: For help on HLS 200-936 see www.xilinx.com/cgi-bin/docs/rdoc?v=2020.2;t=hls+guidance;d=200-936.html
+WARNING: [HLS 200-936] Cannot unroll loop 'storeLikelihoodWide' (likelihood_kernel.cpp:152) in function 'likelihood_kernel': cannot completely unroll a loop with a variable trip count.
+Resolution: For help on HLS 200-936 see www.xilinx.com/cgi-bin/docs/rdoc?v=2020.2;t=hls+guidance;d=200-936.html
+WARNING: [HLS 200-932] Cannot unroll loop 'storeLikelihoodRemainder' (likelihood_kernel.cpp:169) in function 'likelihood_kernel' completely: variable loop bound.
+INFO: [XFORM 203-101] Partitioning array 'buffer_objxy' (likelihood_kernel.cpp:208) in dimension 1 with a cyclic factor 4.
+INFO: [XFORM 203-101] Partitioning array 'buffer_X' (likelihood_kernel.cpp:209) in dimension 1 with a cyclic factor 4.
+INFO: [XFORM 203-101] Partitioning array 'buffer_Y' (likelihood_kernel.cpp:210) in dimension 1 with a cyclic factor 4.
+INFO: [XFORM 203-101] Partitioning array 'buffer_likelihood' (likelihood_kernel.cpp:211) in dimension 1 with a cyclic factor 4.
+INFO: [XFORM 203-602] Inlining function 'roundDouble' into 'likelihood_kernel' (likelihood_kernel.cpp:110) automatically.
+INFO: [HLS 200-111] Finished Loop, function and other optimizations: CPU user time: 0.94 seconds. CPU system time: 0.03 seconds. Elapsed time: 0.98 seconds; current allocated memory: 256.487 MB.
+WARNING: [HLS 200-960] Cannot flatten loop 'computeParticles' (likelihood_kernel.cpp:107:14) in function 'likelihood_kernel' the outer loop is not a perfect loop because there is nontrivial logic before entering the inner loop.
+Resolution: For help on HLS 200-960 see www.xilinx.com/cgi-bin/docs/rdoc?v=2020.2;t=hls+guidance;d=200-960.html
+WARNING: [HLS 200-960] Cannot flatten loop 'Particle_loop' (likelihood_kernel.cpp:227:12) in function 'likelihood_kernel' more than one sub loop.
+Resolution: For help on HLS 200-960 see www.xilinx.com/cgi-bin/docs/rdoc?v=2020.2;t=hls+guidance;d=200-960.html
+INFO: [HLS 200-472] Inferring partial write operation for 'buffer_X[0]' (likelihood_kernel.cpp:83:35)
+INFO: [HLS 200-472] Inferring partial write operation for 'buffer_Y[0]' (likelihood_kernel.cpp:84:35)
+INFO: [HLS 200-472] Inferring partial write operation for 'buffer_objxy[0]' (likelihood_kernel.cpp:47:21)
+INFO: [HLS 200-472] Inferring partial write operation for 'buffer_likelihood[0]' (likelihood_kernel.cpp:139:30)
+INFO: [HLS 200-111] Finished Architecture Synthesis: CPU user time: 0.81 seconds. CPU system time: 0.01 seconds. Elapsed time: 0.81 seconds; current allocated memory: 268.399 MB.
+INFO: [HLS 200-10] Starting hardware synthesis ...
+INFO: [HLS 200-10] Synthesizing 'likelihood_kernel' ...
+INFO: [HLS 200-10] ----------------------------------------------------------------
+INFO: [HLS 200-42] -- Implementing module 'likelihood_kernel' 
+INFO: [HLS 200-10] ----------------------------------------------------------------
+INFO: [SCHED 204-11] Starting scheduling ...
+INFO: [SCHED 204-61] Pipelining loop 'loadObjxy'.
+INFO: [HLS 200-1470] Pipelining result : Target II = 1, Final II = 1, Depth = 10, loop 'loadObjxy'
+WARNING: [SCHED 204-65] Unable to satisfy pipeline directive for loop 'Particle_loop': contains subloop(s) that are not unrolled or flattened.
+INFO: [SCHED 204-61] Pipelining loop 'accumulatePoints'.
+INFO: [HLS 200-1470] Pipelining result : Target II = 1, Final II = 1, Depth = 79, loop 'accumulatePoints'
+INFO: [SCHED 204-61] Pipelining loop 'storeLikelihoodWide'.
+INFO: [HLS 200-1470] Pipelining result : Target II = 1, Final II = 1, Depth = 3, loop 'storeLikelihoodWide'
+INFO: [SCHED 204-61] Pipelining loop 'storeLikelihoodRemainder'.
+INFO: [HLS 200-1470] Pipelining result : Target II = 1, Final II = 1, Depth = 9, loop 'storeLikelihoodRemainder'
+INFO: [SCHED 204-11] Finished scheduling.
+INFO: [HLS 200-111] Finished Scheduling: CPU user time: 0.78 seconds. CPU system time: 0 seconds. Elapsed time: 0.8 seconds; current allocated memory: 274.101 MB.
+INFO: [BIND 205-100] Starting micro-architecture generation ...
+INFO: [BIND 205-101] Performing variable lifetime analysis.
+INFO: [BIND 205-101] Exploring resource sharing.
+WARNING: [BIND 205-102] The specified resource core for memory 'buffer_objxy_0' will be ignored if a simpler one can be used.
+WARNING: [BIND 205-102] The specified resource core for memory 'buffer_objxy_1' will be ignored if a simpler one can be used.
+WARNING: [BIND 205-102] The specified resource core for memory 'buffer_objxy_2' will be ignored if a simpler one can be used.
+WARNING: [BIND 205-102] The specified resource core for memory 'buffer_objxy_3' will be ignored if a simpler one can be used.
+WARNING: [BIND 205-102] The specified resource core for memory 'buffer_X_0' will be ignored if a simpler one can be used.
+WARNING: [BIND 205-102] The specified resource core for memory 'buffer_X_1' will be ignored if a simpler one can be used.
+WARNING: [BIND 205-102] The specified resource core for memory 'buffer_X_2' will be ignored if a simpler one can be used.
+WARNING: [BIND 205-102] The specified resource core for memory 'buffer_X_3' will be ignored if a simpler one can be used.
+WARNING: [BIND 205-102] The specified resource core for memory 'buffer_Y_0' will be ignored if a simpler one can be used.
+WARNING: [BIND 205-102] The specified resource core for memory 'buffer_Y_1' will be ignored if a simpler one can be used.
+WARNING: [BIND 205-102] The specified resource core for memory 'buffer_Y_2' will be ignored if a simpler one can be used.
+WARNING: [BIND 205-102] The specified resource core for memory 'buffer_Y_3' will be ignored if a simpler one can be used.
+WARNING: [BIND 205-102] The specified resource core for memory 'buffer_likelihood_0' will be ignored if a simpler one can be used.
+WARNING: [BIND 205-102] The specified resource core for memory 'buffer_likelihood_1' will be ignored if a simpler one can be used.
+WARNING: [BIND 205-102] The specified resource core for memory 'buffer_likelihood_2' will be ignored if a simpler one can be used.
+WARNING: [BIND 205-102] The specified resource core for memory 'buffer_likelihood_3' will be ignored if a simpler one can be used.
+INFO: [BIND 205-101] Binding ...
+INFO: [BIND 205-100] Finished micro-architecture generation.
+INFO: [HLS 200-111] Finished Binding: CPU user time: 0.98 seconds. CPU system time: 0 seconds. Elapsed time: 0.98 seconds; current allocated memory: 280.202 MB.
+INFO: [HLS 200-10] ----------------------------------------------------------------
+INFO: [HLS 200-10] -- Generating RTL for module 'likelihood_kernel' 
+INFO: [HLS 200-10] ----------------------------------------------------------------
+WARNING: [RTGEN 206-101] Design contains AXI ports. Reset is fixed to synchronous and active low.
+INFO: [RTGEN 206-500] Setting interface mode on port 'likelihood_kernel/gmem0' to 'm_axi'.
+INFO: [RTGEN 206-500] Setting interface mode on port 'likelihood_kernel/gmem1' to 'm_axi'.
+INFO: [RTGEN 206-500] Setting interface mode on port 'likelihood_kernel/gmem2' to 'm_axi'.
+INFO: [RTGEN 206-500] Setting interface mode on port 'likelihood_kernel/gmem3' to 'm_axi'.
+INFO: [RTGEN 206-500] Setting interface mode on port 'likelihood_kernel/gmem4' to 'm_axi'.
+INFO: [RTGEN 206-500] Setting interface mode on port 'likelihood_kernel/Nparticles' to 's_axilite & ap_none'.
+INFO: [RTGEN 206-500] Setting interface mode on port 'likelihood_kernel/countOnes' to 's_axilite & ap_none'.
+INFO: [RTGEN 206-500] Setting interface mode on port 'likelihood_kernel/IszY' to 's_axilite & ap_none'.
+INFO: [RTGEN 206-500] Setting interface mode on port 'likelihood_kernel/Nfr' to 's_axilite & ap_none'.
+INFO: [RTGEN 206-500] Setting interface mode on port 'likelihood_kernel/k' to 's_axilite & ap_none'.
+INFO: [RTGEN 206-500] Setting interface mode on port 'likelihood_kernel/max_size' to 's_axilite & ap_none'.
+INFO: [RTGEN 206-500] Setting interface mode on port 'likelihood_kernel/arrayX' to 's_axilite & ap_none'.
+INFO: [RTGEN 206-500] Setting interface mode on port 'likelihood_kernel/arrayY' to 's_axilite & ap_none'.
+INFO: [RTGEN 206-500] Setting interface mode on port 'likelihood_kernel/objxy' to 's_axilite & ap_none'.
+INFO: [RTGEN 206-500] Setting interface mode on port 'likelihood_kernel/I' to 's_axilite & ap_none'.
+INFO: [RTGEN 206-500] Setting interface mode on port 'likelihood_kernel/likelihood' to 's_axilite & ap_none'.
+INFO: [RTGEN 206-500] Setting interface mode on function 'likelihood_kernel' to 's_axilite & ap_ctrl_hs'.
+INFO: [RTGEN 206-100] Bundling port 'Nparticles', 'countOnes', 'IszY', 'Nfr', 'k', 'max_size', 'arrayX', 'arrayY', 'objxy', 'I', 'likelihood' and 'return' to AXI-Lite port control.
+INFO: [RTGEN 206-100] Generating core module 'dadd_64ns_64ns_64_8_full_dsp_1': 2 instance(s).
+INFO: [RTGEN 206-100] Generating core module 'ddiv_64ns_64ns_64_31_no_dsp_1': 1 instance(s).
+INFO: [RTGEN 206-100] Generating core module 'dsub_64ns_64ns_64_8_full_dsp_1': 1 instance(s).
+INFO: [RTGEN 206-100] Generating core module 'mul_32s_32s_32_2_1': 4 instance(s).
+INFO: [RTGEN 206-100] Generating core module 'mux_464_64_1_1': 5 instance(s).
+INFO: [RTGEN 206-100] Generating core module 'sitodp_32ns_64_5_no_dsp_1': 2 instance(s).
+INFO: [RTGEN 206-100] Finished creating RTL model for 'likelihood_kernel'.
+INFO: [HLS 200-111] Finished Creating RTL model: CPU user time: 0.95 seconds. CPU system time: 0.02 seconds. Elapsed time: 0.97 seconds; current allocated memory: 290.675 MB.
+INFO: [RTMG 210-282] Generating pipelined core: 'likelihood_kernel_mul_32s_32s_32_2_1_Multiplier_0'
+INFO: [RTMG 210-278] Implementing memory 'likelihood_kernel_buffer_objxy_0_ram (RAM_2P_BRAM)' using block RAMs.
+INFO: [RTMG 210-278] Implementing memory 'likelihood_kernel_buffer_X_0_ram (RAM_2P_BRAM)' using block RAMs.
+INFO: [RTMG 210-278] Implementing memory 'likelihood_kernel_buffer_likelihood_0_ram (RAM_2P_BRAM)' using block RAMs.
+INFO: [HLS 200-111] Finished Generating all RTL models: CPU user time: 3.29 seconds. CPU system time: 0.08 seconds. Elapsed time: 3.4 seconds; current allocated memory: 321.711 MB.
+INFO: [VHDL 208-304] Generating VHDL RTL for likelihood_kernel.
+INFO: [VLOG 209-307] Generating Verilog RTL for likelihood_kernel.
+INFO: [HLS 200-1603] Design has MAXI bursts and missed bursts, see Vitis HLS GUI synthesis summary report for detailed information.
+INFO: [HLS 200-790] **** Loop Constraint Status: All loop constraints were satisfied.
+INFO: [HLS 200-789] **** Estimated Fmax: 411.37 MHz
+INFO: [HLS 200-111] Finished Command csynth_design CPU user time: 11.76 seconds. CPU system time: 0.65 seconds. Elapsed time: 12.83 seconds; current allocated memory: 323.137 MB.
+INFO: [HLS 200-112] Total CPU user time: 14.93 seconds. Total CPU system time: 1.66 seconds. Total elapsed time: 15.96 seconds; peak allocated memory: 321.711 MB.
+INFO: [Common 17-206] Exiting vitis_hls at Sun Mar 22 20:49:54 2026...

@@ -1,0 +1,30 @@
+
+
+================================================================
+== Synthesis Summary Report of 'likelihood_kernel'
+================================================================
++ General Information: 
+    * Date:           Sun Mar 22 20:49:52 2026
+    * Version:        2020.2 (Build 3064766 on Wed Nov 18 09:12:47 MST 2020)
+    * Project:        likelihood_memopt.prj
+    * Solution:       solution1 (Vivado IP Flow Target)
+    * Product family: virtexuplus
+    * Target device:  xcu50-fsvh2104-2-e
+    
+
++ Performance & Resource Estimates: 
+    
+    PS: '+' for module; 'o' for loop; '*' for dataflow
+    +------------------------------+------+-------+---------+-----------+----------+---------+------+----------+----------+---------+------------+------------+-----+
+    |            Modules           | Issue|       | Latency |  Latency  | Iteration|         | Trip |          |          |         |            |            |     |
+    |            & Loops           | Type | Slack | (cycles)|    (ns)   |  Latency | Interval| Count| Pipelined|   BRAM   |   DSP   |     FF     |     LUT    | URAM|
+    +------------------------------+------+-------+---------+-----------+----------+---------+------+----------+----------+---------+------------+------------+-----+
+    |+ likelihood_kernel           |     -|  -0.00|        -|          -|         -|        -|     -|        no|  128 (4%)|  9 (~0%)|  23065 (1%)|  24519 (2%)|    -|
+    | o loadObjxy                  |     -|  -2.43|      168|    559.440|        10|        1|   160|       yes|         -|        -|           -|           -|    -|
+    | o Particle_loop              |     -|  -2.43|        -|          -|         -|        -|     -|        no|         -|        -|           -|           -|    -|
+    |  o computeParticles          |     -|  -2.43|    12928|  4.305e+04|       202|        -|    64|        no|         -|        -|           -|           -|    -|
+    |   o accumulatePoints         |     -|  -2.43|      157|    522.810|        79|        1|    80|       yes|         -|        -|           -|           -|    -|
+    |  o storeLikelihoodWide       |     -|  -2.43|        9|     29.970|         3|        1|     8|       yes|         -|        -|           -|           -|    -|
+    |  o storeLikelihoodRemainder  |     -|  -2.43|        -|          -|         9|        1|     -|       yes|         -|        -|           -|           -|    -|
+    +------------------------------+------+-------+---------+-----------+----------+---------+------+----------+----------+---------+------------+------------+-----+
+

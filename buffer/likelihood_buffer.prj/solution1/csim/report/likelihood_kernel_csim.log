@@ -1,0 +1,13 @@
+INFO: [SIM 2] *************** CSIM start ***************
+INFO: [SIM 4] CSIM will launch GCC as the compiler.
+   Compiling ../../../../likelihood_tb.cpp in debug mode
+   Compiling ../../../../likelihood_kernel.cpp in debug mode
+   Generating csim.exe
+Kernel execution time: 0.000744232 s
+likelihood[0] = -225.28
+likelihood[1] = -225.28
+likelihood[2] = -225.28
+likelihood[3] = -225.28
+likelihood[4] = -225.28
+INFO: [SIM 1] CSim done with 0 errors.
+INFO: [SIM 3] *************** CSIM finish ***************

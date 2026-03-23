@@ -1,0 +1,31 @@
+
+
+================================================================
+== Synthesis Summary Report of 'likelihood_kernel'
+================================================================
++ General Information: 
+    * Date:           Fri Mar 20 11:37:17 2026
+    * Version:        2020.2 (Build 3064766 on Wed Nov 18 09:12:47 MST 2020)
+    * Project:        likelihood_buffer.prj
+    * Solution:       solution1 (Vivado IP Flow Target)
+    * Product family: virtexuplus
+    * Target device:  xcu50-fsvh2104-2-e
+    
+
++ Performance & Resource Estimates: 
+    
+    PS: '+' for module; 'o' for loop; '*' for dataflow
+    +-----------------------+--------+-------+---------+-----------+----------+---------+------+----------+---------+---------+------------+------------+-----+
+    |        Modules        |  Issue |       | Latency |  Latency  | Iteration|         | Trip |          |         |         |            |            |     |
+    |        & Loops        |  Type  | Slack | (cycles)|    (ns)   |  Latency | Interval| Count| Pipelined|  BRAM   |   DSP   |     FF     |     LUT    | URAM|
+    +-----------------------+--------+-------+---------+-----------+----------+---------+------+----------+---------+---------+------------+------------+-----+
+    |+ likelihood_kernel    |  Timing|   1.52|  5059235|  1.996e+07|         -|  5059236|     -|        no|  44 (1%)|  7 (~0%)|  9763 (~0%)|  13554 (1%)|    -|
+    | o loadObjxy           |       -|  -2.43|      801|  3.161e+03|         3|        1|   800|       yes|        -|        -|           -|           -|    -|
+    | o Particle_loop       |       -|  -2.43|  5058420|  1.996e+07|    252921|        -|    20|        no|        -|        -|           -|           -|    -|
+    |  o loadParticles      |       -|  -2.43|      101|    398.546|         3|        1|   100|       yes|        -|        -|           -|           -|    -|
+    |  o computeLikelihood  |       -|  -2.43|   252700|  9.972e+05|      2527|        -|   100|        no|        -|        -|           -|           -|    -|
+    |   o computeIndices    |       -|  -2.43|      418|  1.649e+03|        20|        1|   400|       yes|        -|        -|           -|           -|    -|
+    |   o accumuLikelihood  |      II|  -2.43|     2058|  8.121e+03|        64|        5|   400|       yes|        -|        -|           -|           -|    -|
+    |  o storeLikelihood    |       -|  -2.43|      101|    398.546|         3|        1|   100|       yes|        -|        -|           -|           -|    -|
+    +-----------------------+--------+-------+---------+-----------+----------+---------+------+----------+---------+---------+------------+------------+-----+
+

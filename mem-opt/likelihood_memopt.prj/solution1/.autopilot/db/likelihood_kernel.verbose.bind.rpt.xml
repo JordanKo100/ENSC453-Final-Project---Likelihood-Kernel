@@ -1,0 +1,51 @@
+<profile>
+
+<section name = "Vitis HLS Report for 'likelihood_kernel'" level="0">
+<item name = "Date">Sun Mar 22 20:49:49 2026
+</item>
+<item name = "Version">2020.2 (Build 3064766 on Wed Nov 18 09:12:47 MST 2020)</item>
+<item name = "Project">likelihood_memopt.prj</item>
+<item name = "Solution">solution1 (Vivado IP Flow Target)</item>
+<item name = "Product family">virtexuplus</item>
+<item name = "Target device">xcu50-fsvh2104-2-e</item>
+</section>
+
+<section name = "Performance Estimates" level="0">
+<item name = "Timing">
+<section name = "" level="1">
+<item name = "Summary"><table name="" hasTotal="0">
+<keys size="4">Clock, Target, Estimated, Uncertainty</keys>
+<column name="ap_clk">3.33 ns, 2.431 ns, 0.90 ns</column>
+</table>
+</item>
+</section>
+</item>
+<item name = "Latency">
+<section name = "" level="1">
+<item name = "Summary"><table name="" hasTotal="0">
+<keys size="8">, min, max, min, max, min, max, Type</keys>
+<column name="">?, ?, ?, ?, ?, ?, none</column>
+</table>
+</item>
+<item name = "Detail">
+<section name = "" level="1">
+<item name = "Instance"><table name="" hasTotal="0">
+<keys size="9">Instance, Module, min, max, min, max, min, max, Type</keys>
+</table>
+</item>
+<item name = "Loop"><table name="" hasTotal="0">
+<keys size="8">Loop Name, min, max, Latency, achieved, target, Count, Pipelined</keys>
+<column name="- loadObjxy">168, 168, 10, 1, 1, 160, yes</column>
+<column name="- Particle_loop">?, ?, ?, -, -, 32, no</column>
+<column name=" + computeParticles">12288, 12928, 192 ~ 202, -, -, 64, no</column>
+<column name="  ++ accumulatePoints">147, 157, 79, 1, 1, 70 ~ 80, yes</column>
+<column name=" + storeLikelihoodWide">9, 9, 3, 1, 1, 8, yes</column>
+<column name=" + storeLikelihoodRemainder">?, ?, 9, 1, 1, ?, yes</column>
+</table>
+</item>
+</section>
+</item>
+</section>
+</item>
+</section>
+</profile>
