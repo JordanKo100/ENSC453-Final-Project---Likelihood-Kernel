@@ -11,8 +11,8 @@ entity likelihood_kernel_buffer_X_0_ram is
     generic(
             MEM_TYPE    : string := "block"; 
             DWIDTH     : integer := 64; 
-            AWIDTH     : integer := 4; 
-            MEM_SIZE    : integer := 16
+            AWIDTH     : integer := 3; 
+            MEM_SIZE    : integer := 8
     ); 
     port (
           addr0     : in std_logic_vector(AWIDTH-1 downto 0); 
@@ -83,8 +83,8 @@ use IEEE.std_logic_1164.all;
 entity likelihood_kernel_buffer_X_0 is
     generic (
         DataWidth : INTEGER := 64;
-        AddressRange : INTEGER := 16;
-        AddressWidth : INTEGER := 4);
+        AddressRange : INTEGER := 8;
+        AddressWidth : INTEGER := 3);
     port (
         reset : IN STD_LOGIC;
         clk : IN STD_LOGIC;

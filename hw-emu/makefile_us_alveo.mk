@@ -43,60 +43,56 @@ help:
 endif
 
 ############################## Setting up Project Variables ##############################
-TARGET ?= hw
+TARGET ?= hw_emu
 include ./utils.mk
 
 TEMP_DIR := ./_x.$(TARGET).$(XSA)
 BUILD_DIR := ./build_dir.$(TARGET).$(XSA)
 
-LINK_OUTPUT := $(BUILD_DIR)/mm_krl.link.xclbin
+LINK_OUTPUT := $(BUILD_DIR)/likelihood_krl.link.xclbin
 PACKAGE_OUT = ./package.$(TARGET)
 
-VPP_PFLAGS := 
-CMD_ARGS = $(BUILD_DIR)/mm_krl.xclbin
+VPP_PFLAGS :=
+CMD_ARGS = $(BUILD_DIR)/likelihood_krl.xclbin --verify
 CXXFLAGS += -I$(XILINX_XRT)/include -I$(XILINX_VIVADO)/include -I/usr/include/x86_64-linux-gnu -Wall -O0 -g -std=c++1y
 LDFLAGS += -L$(XILINX_XRT)/lib -pthread -lOpenCL
 
 ########################## Checking if PLATFORM in allowlist #######################
-PLATFORM_BLOCKLIST += nodma 
+PLATFORM_BLOCKLIST += nodma
 ############################## Setting up Host Variables ##############################
-#Include Required Host Source Files
-CXXFLAGS += -I$(XF_PROJ_ROOT)/common/includes/xcl2 
-HOST_SRCS += $(XF_PROJ_ROOT)/common/includes/xcl2/xcl2.cpp ./host.cpp 
-# Host compiler global settings
+CXXFLAGS += -I$(XF_PROJ_ROOT)/common/includes/xcl2
+HOST_SRCS += $(XF_PROJ_ROOT)/common/includes/xcl2/xcl2.cpp ./host.cpp
 CXXFLAGS += -fmessage-length=0
-LDFLAGS += -lrt -lstdc++ 
+LDFLAGS += -lrt -lstdc++
 
 ############################## Setting up Kernel Variables ##############################
-# Kernel compiler global settings
-VPP_FLAGS += -t $(TARGET) --platform $(PLATFORM) --save-temps 
+VPP_FLAGS += -t $(TARGET) --platform $(PLATFORM) --save-temps
 
-
-EXECUTABLE = ./mm
+EXECUTABLE = ./likelihood
 EMCONFIG_DIR = $(TEMP_DIR)
 
 ############################## Setting Targets ##############################
 .PHONY: all clean cleanall docs emconfig
-all: check-platform check-device check-vitis $(EXECUTABLE) $(BUILD_DIR)/mm_krl.xclbin emconfig
+all: check-platform check-device check-vitis $(EXECUTABLE) $(BUILD_DIR)/likelihood_krl.xclbin emconfig
 
 .PHONY: host
 host: $(EXECUTABLE)
 
 .PHONY: build
-build: check-vitis check-device $(BUILD_DIR)/mm_krl.xclbin
+build: check-vitis check-device $(BUILD_DIR)/likelihood_krl.xclbin
 
 .PHONY: xclbin
 xclbin: build
 
 ############################## Setting Rules for Binary Containers (Building Kernels) ##############################
-$(TEMP_DIR)/mm_krl.xo: mm.cpp mm.h
+$(TEMP_DIR)/likelihood_krl.xo: likelihood_kernel.cpp likelihood_kernel.h
 	mkdir -p $(TEMP_DIR)
-	v++ $(VPP_FLAGS) -c -k kernel_gemm --temp_dir $(TEMP_DIR) -I'$(<D)' -o'$@' '$<'
+	v++ $(VPP_FLAGS) -c -k likelihood_kernel --temp_dir $(TEMP_DIR) -I'$(<D)' -o'$@' '$<'
 
-$(BUILD_DIR)/mm_krl.xclbin: $(TEMP_DIR)/mm_krl.xo
+$(BUILD_DIR)/likelihood_krl.xclbin: $(TEMP_DIR)/likelihood_krl.xo
 	mkdir -p $(BUILD_DIR)
 	v++ $(VPP_FLAGS) -l $(VPP_LDFLAGS) --temp_dir $(TEMP_DIR) -o'$(LINK_OUTPUT)' $(+)
-	v++ -p $(LINK_OUTPUT) $(VPP_FLAGS) --package.out_dir $(PACKAGE_OUT) -o $(BUILD_DIR)/mm_krl.xclbin
+	v++ -p $(LINK_OUTPUT) $(VPP_FLAGS) --package.out_dir $(PACKAGE_OUT) -o $(BUILD_DIR)/likelihood_krl.xclbin
 
 ############################## Setting Rules for Host (Building Host Executable) ##############################
 $(EXECUTABLE): $(HOST_SRCS) | check-xrt
@@ -124,14 +120,12 @@ else
 endif
 
 ############################## Cleaning Rules ##############################
-# Cleaning stuff
 clean:
-	-$(RMDIR) $(EXECUTABLE) $(XCLBIN)/{*sw_emu*,*hw_emu*} 
-	-$(RMDIR) profile_* TempConfig system_estimate.xtxt *.rpt *.csv 
+	-$(RMDIR) $(EXECUTABLE) $(XCLBIN)/{*sw_emu*,*hw_emu*}
+	-$(RMDIR) profile_* TempConfig system_estimate.xtxt *.rpt *.csv
 	-$(RMDIR) *.ll *v++* .Xil emconfig.json dltmp* xmltmp* *.log *.jou *.wcfg *.wdb
 
 cleanall: clean
 	-$(RMDIR) build_dir*
 	-$(RMDIR) package.*
 	-$(RMDIR) _x* *xclbin.run_summary qemu-memory-_* emulation _vimage pl* start_simulation.sh *.xclbin
-

@@ -13,81 +13,101 @@
 <SummaryOfTimingAnalysis>
 <TargetClockPeriod>3.33</TargetClockPeriod>
 <ClockUncertainty>0.90</ClockUncertainty>
-<EstimatedClockPeriod>3.946</EstimatedClockPeriod>
+<EstimatedClockPeriod>2.431</EstimatedClockPeriod>
 </SummaryOfTimingAnalysis>
 <SummaryOfOverallLatency>
-<Best-caseLatency>66</Best-caseLatency>
-<Average-caseLatency>1284651</Average-caseLatency>
-<Worst-caseLatency>5059235</Worst-caseLatency>
-<Best-caseRealTimeLatency>0.260 us</Best-caseRealTimeLatency>
-<Average-caseRealTimeLatency>5.069 ms</Average-caseRealTimeLatency>
-<Worst-caseRealTimeLatency>19.964 ms</Worst-caseRealTimeLatency>
-<PipelineInitiationInterval>67 ~ 5059236</PipelineInitiationInterval>
+<Best-caseLatency>45</Best-caseLatency>
+<Average-caseLatency>31201</Average-caseLatency>
+<Worst-caseLatency>443263</Worst-caseLatency>
+<Best-caseRealTimeLatency>0.150 us</Best-caseRealTimeLatency>
+<Average-caseRealTimeLatency>0.104 ms</Average-caseRealTimeLatency>
+<Worst-caseRealTimeLatency>1.476 ms</Worst-caseRealTimeLatency>
+<PipelineInitiationInterval>46 ~ 443264</PipelineInitiationInterval>
 <PipelineType>none</PipelineType>
 </SummaryOfOverallLatency>
 <SummaryOfLoopLatency>
 <loadObjxy>
 <Name>loadObjxy</Name>
-<TripCount>800</TripCount>
-<Latency>801</Latency>
-<AbsoluteTimeLatency>3.161 us</AbsoluteTimeLatency>
+<TripCount>
+<range>
+<min>140</min>
+<max>160</max>
+</range>
+</TripCount>
+<Latency>150 ~ 170</Latency>
+<AbsoluteTimeLatency>0.499 us ~ 0.566 us</AbsoluteTimeLatency>
 <PipelineII>1</PipelineII>
-<PipelineDepth>3</PipelineDepth>
+<PipelineDepth>12</PipelineDepth>
 </loadObjxy>
 <Particle_loop>
 <Name>Particle_loop</Name>
-<TripCount>20</TripCount>
-<Latency>60 ~ 5058420</Latency>
-<AbsoluteTimeLatency>0.237 us ~ 19.961 ms</AbsoluteTimeLatency>
+<TripCount>
+<range>
+<min>1</min>
+<max>32</max>
+</range>
+</TripCount>
+<Latency>3 ~ 443040</Latency>
+<AbsoluteTimeLatency>9.990 ns ~ 1.475 ms</AbsoluteTimeLatency>
 <IterationLatency>
 <range>
 <min>3</min>
-<max>252921</max>
+<max>13845</max>
 </range>
 </IterationLatency>
-<PipelineDepth>3 ~ 252921</PipelineDepth>
+<PipelineDepth>3 ~ 13845</PipelineDepth>
 <loadParticles>
 <Name>loadParticles</Name>
-<TripCount>100</TripCount>
-<Latency>101</Latency>
-<AbsoluteTimeLatency>0.399 us</AbsoluteTimeLatency>
+<TripCount>64</TripCount>
+<Latency>65</Latency>
+<AbsoluteTimeLatency>0.216 us</AbsoluteTimeLatency>
 <PipelineII>1</PipelineII>
 <PipelineDepth>3</PipelineDepth>
 </loadParticles>
 <computeLikelihood>
 <Name>computeLikelihood</Name>
-<TripCount>100</TripCount>
-<Latency>3600 ~ 252700</Latency>
-<AbsoluteTimeLatency>14.206 us ~ 0.997 ms</AbsoluteTimeLatency>
+<TripCount>64</TripCount>
+<Latency>2176 ~ 13696</Latency>
+<AbsoluteTimeLatency>7.246 us ~ 45.608 us</AbsoluteTimeLatency>
 <IterationLatency>
 <range>
-<min>36</min>
-<max>2527</max>
+<min>34</min>
+<max>214</max>
 </range>
 </IterationLatency>
-<PipelineDepth>36 ~ 2527</PipelineDepth>
+<PipelineDepth>34 ~ 214</PipelineDepth>
 <computeIndices>
 <Name>computeIndices</Name>
-<TripCount>400</TripCount>
-<Latency>418</Latency>
-<AbsoluteTimeLatency>1.649 us</AbsoluteTimeLatency>
+<TripCount>
+<range>
+<min>70</min>
+<max>80</max>
+</range>
+</TripCount>
+<Latency>77 ~ 87</Latency>
+<AbsoluteTimeLatency>0.256 us ~ 0.290 us</AbsoluteTimeLatency>
 <PipelineII>1</PipelineII>
-<PipelineDepth>20</PipelineDepth>
+<PipelineDepth>9</PipelineDepth>
 </computeIndices>
 <accumuLikelihood>
 <Name>accumuLikelihood</Name>
-<TripCount>400</TripCount>
-<Latency>2058</Latency>
-<AbsoluteTimeLatency>8.121 us</AbsoluteTimeLatency>
-<PipelineII>5</PipelineII>
-<PipelineDepth>64</PipelineDepth>
+<TripCount>
+<range>
+<min>70</min>
+<max>80</max>
+</range>
+</TripCount>
+<Latency>79 ~ 89</Latency>
+<AbsoluteTimeLatency>0.263 us ~ 0.296 us</AbsoluteTimeLatency>
+<PipelineII>1</PipelineII>
+<PipelineDepth>11</PipelineDepth>
 </accumuLikelihood>
 </computeLikelihood>
 <storeLikelihood>
 <Name>storeLikelihood</Name>
-<TripCount>100</TripCount>
-<Latency>101</Latency>
-<AbsoluteTimeLatency>0.399 us</AbsoluteTimeLatency>
+<TripCount>64</TripCount>
+<Latency>65</Latency>
+<AbsoluteTimeLatency>0.216 us</AbsoluteTimeLatency>
 <PipelineII>1</PipelineII>
 <PipelineDepth>3</PipelineDepth>
 </storeLikelihood>
@@ -96,16 +116,16 @@
 </PerformanceEstimates>
 <AreaEstimates>
 <Resources>
-<BRAM_18K>44</BRAM_18K>
+<BRAM_18K>19</BRAM_18K>
 <AVAIL_BRAM>2688</AVAIL_BRAM>
-<UTIL_BRAM>1</UTIL_BRAM>
-<DSP>7</DSP>
+<UTIL_BRAM>~0</UTIL_BRAM>
+<DSP>14</DSP>
 <AVAIL_DSP>5952</AVAIL_DSP>
 <UTIL_DSP>~0</UTIL_DSP>
-<FF>9763</FF>
+<FF>8856</FF>
 <AVAIL_FF>1743360</AVAIL_FF>
 <UTIL_FF>~0</UTIL_FF>
-<LUT>13554</LUT>
+<LUT>12133</LUT>
 <AVAIL_LUT>871680</AVAIL_LUT>
 <UTIL_LUT>1</UTIL_LUT>
 <URAM>0</URAM>

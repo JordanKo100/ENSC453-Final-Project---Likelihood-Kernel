@@ -6,8 +6,8 @@
 module likelihood_kernel_buffer_X_0_ram (addr0, ce0, q0, addr1, ce1, d1, we1,  clk);
 
 parameter DWIDTH = 64;
-parameter AWIDTH = 4;
-parameter MEM_SIZE = 16;
+parameter AWIDTH = 3;
+parameter MEM_SIZE = 8;
 
 input[AWIDTH-1:0] addr0;
 input ce0;
@@ -55,8 +55,8 @@ module likelihood_kernel_buffer_X_0(
     d1);
 
 parameter DataWidth = 32'd64;
-parameter AddressRange = 32'd16;
-parameter AddressWidth = 32'd4;
+parameter AddressRange = 32'd8;
+parameter AddressWidth = 32'd3;
 input reset;
 input clk;
 input[AddressWidth - 1:0] address0;

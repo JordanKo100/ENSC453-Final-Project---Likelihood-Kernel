@@ -44,7 +44,7 @@ set SCTraceOption all
 set TargetInfo xcu50:-fsvh2104:-2-e
 set SourceFiles {sc {} c {../../likelihood_kernel.h ../../likelihood_kernel.cpp}}
 set SourceFlags {sc {} c {{ } {} { } {}}}
-set DirectiveFile /local-scratch/localhome/rkk10/Downloads/proj_7/proj_7/mem-opt/likelihood_memopt.prj/solution1/solution1.directive
+set DirectiveFile /local-scratch/localhome/mca307/453/proj_7/mem-opt/likelihood_memopt.prj/solution1/solution1.directive
 set TBFiles {verilog ../../likelihood_tb.cpp bc ../../likelihood_tb.cpp sc ../../likelihood_tb.cpp vhdl ../../likelihood_tb.cpp c {} cas ../../likelihood_tb.cpp}
 set SpecLanguage C
 set TVInFiles {bc {} c {} sc {} cas {} vhdl {} verilog {}}

@@ -9,9 +9,9 @@ use ieee.std_logic_unsigned.all;
 
 entity likelihood_kernel_buffer_objxy_ram is 
     generic(
-            DWIDTH     : integer := 64; 
-            AWIDTH     : integer := 10; 
-            MEM_SIZE    : integer := 800
+            DWIDTH     : integer := 32; 
+            AWIDTH     : integer := 8; 
+            MEM_SIZE    : integer := 160
     ); 
     port (
           addr0     : in std_logic_vector(AWIDTH-1 downto 0); 
@@ -91,9 +91,9 @@ use IEEE.std_logic_1164.all;
 
 entity likelihood_kernel_buffer_objxy is
     generic (
-        DataWidth : INTEGER := 64;
-        AddressRange : INTEGER := 800;
-        AddressWidth : INTEGER := 10);
+        DataWidth : INTEGER := 32;
+        AddressRange : INTEGER := 160;
+        AddressWidth : INTEGER := 8);
     port (
         reset : IN STD_LOGIC;
         clk : IN STD_LOGIC;

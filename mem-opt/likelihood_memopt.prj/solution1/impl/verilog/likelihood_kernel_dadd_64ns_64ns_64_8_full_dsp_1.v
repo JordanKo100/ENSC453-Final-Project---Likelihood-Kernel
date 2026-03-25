@@ -7,7 +7,7 @@
 
 module likelihood_kernel_dadd_64ns_64ns_64_8_full_dsp_1
 #(parameter
-    ID         = 1,
+    ID         = 23,
     NUM_STAGE  = 8,
     din0_WIDTH = 64,
     din1_WIDTH = 64,

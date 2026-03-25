@@ -1,7 +1,7 @@
 <profile>
 
 <section name = "Vitis HLS Report for 'likelihood_kernel'" level="0">
-<item name = "Date">Fri Mar 20 11:37:16 2026
+<item name = "Date">Tue Mar 24 15:10:38 2026
 </item>
 <item name = "Version">2020.2 (Build 3064766 on Wed Nov 18 09:12:47 MST 2020)</item>
 <item name = "Project">likelihood_buffer.prj</item>
@@ -15,7 +15,7 @@
 <section name = "" level="1">
 <item name = "Summary"><table name="" hasTotal="0">
 <keys size="4">Clock, Target, Estimated, Uncertainty</keys>
-<column name="ap_clk">3.33 ns, 3.946 ns, 0.90 ns</column>
+<column name="ap_clk">3.33 ns, 2.431 ns, 0.90 ns</column>
 </table>
 </item>
 </section>
@@ -24,7 +24,7 @@
 <section name = "" level="1">
 <item name = "Summary"><table name="" hasTotal="0">
 <keys size="8">, min, max, min, max, min, max, Type</keys>
-<column name="">66, 5059235, 0.260 us, 19.964 ms, 67, 5059236, none</column>
+<column name="">45, 443263, 0.150 us, 1.476 ms, 46, 443264, none</column>
 </table>
 </item>
 <item name = "Detail">
@@ -35,13 +35,13 @@
 </item>
 <item name = "Loop"><table name="" hasTotal="0">
 <keys size="8">Loop Name, min, max, Latency, achieved, target, Count, Pipelined</keys>
-<column name="- loadObjxy">801, 801, 3, 1, 1, 800, yes</column>
-<column name="- Particle_loop">60, 5058420, 3 ~ 252921, -, -, 20, no</column>
-<column name=" + loadParticles">101, 101, 3, 1, 1, 100, yes</column>
-<column name=" + computeLikelihood">3600, 252700, 36 ~ 2527, -, -, 100, no</column>
-<column name="  ++ computeIndices">418, 418, 20, 1, 1, 400, yes</column>
-<column name="  ++ accumuLikelihood">2058, 2058, 64, 5, 1, 400, yes</column>
-<column name=" + storeLikelihood">101, 101, 3, 1, 1, 100, yes</column>
+<column name="- loadObjxy">150, 170, 12, 1, 1, 140 ~ 160, yes</column>
+<column name="- Particle_loop">3, 443040, 3 ~ 13845, -, -, 1 ~ 32, no</column>
+<column name=" + loadParticles">65, 65, 3, 1, 1, 64, yes</column>
+<column name=" + computeLikelihood">2176, 13696, 34 ~ 214, -, -, 64, no</column>
+<column name="  ++ computeIndices">77, 87, 9, 1, 1, 70 ~ 80, yes</column>
+<column name="  ++ accumuLikelihood">79, 89, 11, 1, 1, 70 ~ 80, yes</column>
+<column name=" + storeLikelihood">65, 65, 3, 1, 1, 64, yes</column>
 </table>
 </item>
 </section>

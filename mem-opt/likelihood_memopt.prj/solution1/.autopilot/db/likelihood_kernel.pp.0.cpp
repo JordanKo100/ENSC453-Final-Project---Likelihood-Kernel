@@ -178,23 +178,23 @@ namespace __gnu_cxx
 # 1 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/tps/lnx64/gcc-6.2.0/lib/gcc/x86_64-pc-linux-gnu/6.2.0/../../../../include/c++/6.2.0/x86_64-pc-linux-gnu/bits/os_defines.h" 1 3
 # 39 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/tps/lnx64/gcc-6.2.0/lib/gcc/x86_64-pc-linux-gnu/6.2.0/../../../../include/c++/6.2.0/x86_64-pc-linux-gnu/bits/os_defines.h" 3
 # 1 "/usr/include/features.h" 1 3 4
-# 402 "/usr/include/features.h" 3 4
+# 416 "/usr/include/features.h" 3 4
 # 1 "/usr/include/stdc-predef.h" 1 3 4
-# 403 "/usr/include/features.h" 2 3 4
-# 424 "/usr/include/features.h" 3 4
-# 1 "/usr/local/include/sys/cdefs.h" 1 3 4
-# 427 "/usr/local/include/sys/cdefs.h" 3 4
-# 1 "/usr/local/include/bits/wordsize.h" 1 3 4
-# 428 "/usr/local/include/sys/cdefs.h" 2 3 4
-# 1 "/usr/local/include/bits/long-double.h" 1 3 4
-# 429 "/usr/local/include/sys/cdefs.h" 2 3 4
-# 425 "/usr/include/features.h" 2 3 4
-# 448 "/usr/include/features.h" 3 4
-# 1 "/usr/local/include/gnu/stubs.h" 1 3 4
-# 10 "/usr/local/include/gnu/stubs.h" 3 4
-# 1 "/usr/local/include/gnu/stubs-64.h" 1 3 4
-# 11 "/usr/local/include/gnu/stubs.h" 2 3 4
-# 449 "/usr/include/features.h" 2 3 4
+# 417 "/usr/include/features.h" 2 3 4
+# 438 "/usr/include/features.h" 3 4
+# 1 "/usr/include/sys/cdefs.h" 1 3 4
+# 501 "/usr/include/sys/cdefs.h" 3 4
+# 1 "/usr/include/bits/wordsize.h" 1 3 4
+# 502 "/usr/include/sys/cdefs.h" 2 3 4
+# 1 "/usr/include/bits/long-double.h" 1 3 4
+# 503 "/usr/include/sys/cdefs.h" 2 3 4
+# 439 "/usr/include/features.h" 2 3 4
+# 462 "/usr/include/features.h" 3 4
+# 1 "/usr/include/gnu/stubs.h" 1 3 4
+# 10 "/usr/include/gnu/stubs.h" 3 4
+# 1 "/usr/include/gnu/stubs-64.h" 1 3 4
+# 11 "/usr/include/gnu/stubs.h" 2 3 4
+# 463 "/usr/include/features.h" 2 3 4
 # 40 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/tps/lnx64/gcc-6.2.0/lib/gcc/x86_64-pc-linux-gnu/6.2.0/../../../../include/c++/6.2.0/x86_64-pc-linux-gnu/bits/os_defines.h" 2 3
 # 496 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/tps/lnx64/gcc-6.2.0/lib/gcc/x86_64-pc-linux-gnu/6.2.0/../../../../include/c++/6.2.0/x86_64-pc-linux-gnu/bits/c++config.h" 2 3
 
@@ -716,7 +716,7 @@ namespace __gnu_cxx __attribute__ ((__visibility__ ("default")))
 
 # 1 "/usr/include/math.h" 1 3 4
 # 27 "/usr/include/math.h" 3 4
-# 1 "/usr/local/include/bits/libc-header-start.h" 1 3 4
+# 1 "/usr/include/bits/libc-header-start.h" 1 3 4
 # 28 "/usr/include/math.h" 2 3 4
 
 
@@ -728,10 +728,10 @@ extern "C" {
 
 
 
-# 1 "/usr/local/include/bits/types.h" 1 3 4
-# 27 "/usr/local/include/bits/types.h" 3 4
-# 1 "/usr/local/include/bits/wordsize.h" 1 3 4
-# 28 "/usr/local/include/bits/types.h" 2 3 4
+# 1 "/usr/include/bits/types.h" 1 3 4
+# 27 "/usr/include/bits/types.h" 3 4
+# 1 "/usr/include/bits/wordsize.h" 1 3 4
+# 28 "/usr/include/bits/types.h" 2 3 4
 
 
 typedef unsigned char __u_char;
@@ -755,6 +755,16 @@ typedef unsigned long int __uint64_t;
 
 
 
+typedef __int8_t __int_least8_t;
+typedef __uint8_t __uint_least8_t;
+typedef __int16_t __int_least16_t;
+typedef __uint16_t __uint_least16_t;
+typedef __int32_t __int_least32_t;
+typedef __uint32_t __uint_least32_t;
+typedef __int64_t __int_least64_t;
+typedef __uint64_t __uint_least64_t;
+
+
 
 typedef long int __quad_t;
 typedef unsigned long int __u_quad_t;
@@ -767,9 +777,9 @@ typedef unsigned long int __u_quad_t;
 
 typedef long int __intmax_t;
 typedef unsigned long int __uintmax_t;
-# 130 "/usr/local/include/bits/types.h" 3 4
-# 1 "/usr/local/include/bits/typesizes.h" 1 3 4
-# 131 "/usr/local/include/bits/types.h" 2 3 4
+# 140 "/usr/include/bits/types.h" 3 4
+# 1 "/usr/include/bits/typesizes.h" 1 3 4
+# 141 "/usr/include/bits/types.h" 2 3 4
 
 
 typedef unsigned long int __dev_t;
@@ -845,40 +855,40 @@ typedef int __sig_atomic_t;
 # 38 "/usr/include/math.h" 2 3 4
 
 
-# 1 "/usr/local/include/bits/math-vector.h" 1 3 4
-# 25 "/usr/local/include/bits/math-vector.h" 3 4
-# 1 "/usr/local/include/bits/libm-simd-decl-stubs.h" 1 3 4
-# 26 "/usr/local/include/bits/math-vector.h" 2 3 4
+# 1 "/usr/include/bits/math-vector.h" 1 3 4
+# 25 "/usr/include/bits/math-vector.h" 3 4
+# 1 "/usr/include/bits/libm-simd-decl-stubs.h" 1 3 4
+# 26 "/usr/include/bits/math-vector.h" 2 3 4
 # 41 "/usr/include/math.h" 2 3 4
 
 
-# 1 "/usr/local/include/bits/floatn.h" 1 3 4
-# 120 "/usr/local/include/bits/floatn.h" 3 4
-# 1 "/usr/local/include/bits/floatn-common.h" 1 3 4
-# 24 "/usr/local/include/bits/floatn-common.h" 3 4
-# 1 "/usr/local/include/bits/long-double.h" 1 3 4
-# 25 "/usr/local/include/bits/floatn-common.h" 2 3 4
-# 207 "/usr/local/include/bits/floatn-common.h" 3 4
+# 1 "/usr/include/bits/floatn.h" 1 3 4
+# 119 "/usr/include/bits/floatn.h" 3 4
+# 1 "/usr/include/bits/floatn-common.h" 1 3 4
+# 24 "/usr/include/bits/floatn-common.h" 3 4
+# 1 "/usr/include/bits/long-double.h" 1 3 4
+# 25 "/usr/include/bits/floatn-common.h" 2 3 4
+# 214 "/usr/include/bits/floatn-common.h" 3 4
 typedef float _Float32;
-# 244 "/usr/local/include/bits/floatn-common.h" 3 4
+# 251 "/usr/include/bits/floatn-common.h" 3 4
 typedef double _Float64;
-# 261 "/usr/local/include/bits/floatn-common.h" 3 4
+# 268 "/usr/include/bits/floatn-common.h" 3 4
 typedef double _Float32x;
-# 278 "/usr/local/include/bits/floatn-common.h" 3 4
+# 285 "/usr/include/bits/floatn-common.h" 3 4
 typedef long double _Float64x;
-# 121 "/usr/local/include/bits/floatn.h" 2 3 4
+# 120 "/usr/include/bits/floatn.h" 2 3 4
 # 44 "/usr/include/math.h" 2 3 4
 # 138 "/usr/include/math.h" 3 4
-# 1 "/usr/local/include/bits/flt-eval-method.h" 1 3 4
+# 1 "/usr/include/bits/flt-eval-method.h" 1 3 4
 # 139 "/usr/include/math.h" 2 3 4
 # 149 "/usr/include/math.h" 3 4
 typedef float float_t;
 typedef double double_t;
 # 190 "/usr/include/math.h" 3 4
-# 1 "/usr/local/include/bits/fp-logb.h" 1 3 4
+# 1 "/usr/include/bits/fp-logb.h" 1 3 4
 # 191 "/usr/include/math.h" 2 3 4
 # 233 "/usr/include/math.h" 3 4
-# 1 "/usr/local/include/bits/fp-fast.h" 1 3 4
+# 1 "/usr/include/bits/fp-fast.h" 1 3 4
 # 234 "/usr/include/math.h" 2 3 4
 
 
@@ -902,8 +912,8 @@ enum
       4,
   };
 # 289 "/usr/include/math.h" 3 4
-# 1 "/usr/local/include/bits/mathcalls-helper-functions.h" 1 3 4
-# 21 "/usr/local/include/bits/mathcalls-helper-functions.h" 3 4
+# 1 "/usr/include/bits/mathcalls-helper-functions.h" 1 3 4
+# 21 "/usr/include/bits/mathcalls-helper-functions.h" 3 4
 extern int __fpclassify (double __value) throw ()
      __attribute__ ((__const__));
 
@@ -928,8 +938,8 @@ extern int __iseqsig (double __x, double __y) throw ();
 extern int __issignaling (double __value) throw ()
      __attribute__ ((__const__));
 # 290 "/usr/include/math.h" 2 3 4
-# 1 "/usr/local/include/bits/mathcalls.h" 1 3 4
-# 53 "/usr/local/include/bits/mathcalls.h" 3 4
+# 1 "/usr/include/bits/mathcalls.h" 1 3 4
+# 53 "/usr/include/bits/mathcalls.h" 3 4
 extern double acos (double __x) throw (); extern double __acos (double __x) throw ();
 
 extern double asin (double __x) throw (); extern double __asin (double __x) throw ();
@@ -1046,7 +1056,7 @@ extern double floor (double __x) throw () __attribute__ ((__const__)); extern do
 
 
 extern double fmod (double __x, double __y) throw (); extern double __fmod (double __x, double __y) throw ();
-# 182 "/usr/local/include/bits/mathcalls.h" 3 4
+# 182 "/usr/include/bits/mathcalls.h" 3 4
 extern int finite (double __value) throw () __attribute__ ((__const__));
 
 
@@ -1066,8 +1076,8 @@ extern double copysign (double __x, double __y) throw () __attribute__ ((__const
 
 
 
-extern double nan (const char *__tagb) throw () __attribute__ ((__const__)); extern double __nan (const char *__tagb) throw () __attribute__ ((__const__));
-# 217 "/usr/local/include/bits/mathcalls.h" 3 4
+extern double nan (const char *__tagb) throw (); extern double __nan (const char *__tagb) throw ();
+# 217 "/usr/include/bits/mathcalls.h" 3 4
 extern double j0 (double) throw (); extern double __j0 (double) throw ();
 extern double j1 (double) throw (); extern double __j1 (double) throw ();
 extern double jn (int, double) throw (); extern double __jn (int, double) throw ();
@@ -1250,8 +1260,8 @@ extern int setpayloadsig (double *__x, double __payload) throw ();
 extern double scalb (double __x, double __n) throw (); extern double __scalb (double __x, double __n) throw ();
 # 291 "/usr/include/math.h" 2 3 4
 # 306 "/usr/include/math.h" 3 4
-# 1 "/usr/local/include/bits/mathcalls-helper-functions.h" 1 3 4
-# 21 "/usr/local/include/bits/mathcalls-helper-functions.h" 3 4
+# 1 "/usr/include/bits/mathcalls-helper-functions.h" 1 3 4
+# 21 "/usr/include/bits/mathcalls-helper-functions.h" 3 4
 extern int __fpclassifyf (float __value) throw ()
      __attribute__ ((__const__));
 
@@ -1276,8 +1286,8 @@ extern int __iseqsigf (float __x, float __y) throw ();
 extern int __issignalingf (float __value) throw ()
      __attribute__ ((__const__));
 # 307 "/usr/include/math.h" 2 3 4
-# 1 "/usr/local/include/bits/mathcalls.h" 1 3 4
-# 53 "/usr/local/include/bits/mathcalls.h" 3 4
+# 1 "/usr/include/bits/mathcalls.h" 1 3 4
+# 53 "/usr/include/bits/mathcalls.h" 3 4
 extern float acosf (float __x) throw (); extern float __acosf (float __x) throw ();
 
 extern float asinf (float __x) throw (); extern float __asinf (float __x) throw ();
@@ -1394,7 +1404,7 @@ extern float floorf (float __x) throw () __attribute__ ((__const__)); extern flo
 
 
 extern float fmodf (float __x, float __y) throw (); extern float __fmodf (float __x, float __y) throw ();
-# 177 "/usr/local/include/bits/mathcalls.h" 3 4
+# 177 "/usr/include/bits/mathcalls.h" 3 4
 extern int isinff (float __value) throw () __attribute__ ((__const__));
 
 
@@ -1419,8 +1429,8 @@ extern float copysignf (float __x, float __y) throw () __attribute__ ((__const__
 
 
 
-extern float nanf (const char *__tagb) throw () __attribute__ ((__const__)); extern float __nanf (const char *__tagb) throw () __attribute__ ((__const__));
-# 211 "/usr/local/include/bits/mathcalls.h" 3 4
+extern float nanf (const char *__tagb) throw (); extern float __nanf (const char *__tagb) throw ();
+# 211 "/usr/include/bits/mathcalls.h" 3 4
 extern int isnanf (float __value) throw () __attribute__ ((__const__));
 
 
@@ -1609,8 +1619,8 @@ extern int setpayloadsigf (float *__x, float __payload) throw ();
 extern float scalbf (float __x, float __n) throw (); extern float __scalbf (float __x, float __n) throw ();
 # 308 "/usr/include/math.h" 2 3 4
 # 349 "/usr/include/math.h" 3 4
-# 1 "/usr/local/include/bits/mathcalls-helper-functions.h" 1 3 4
-# 21 "/usr/local/include/bits/mathcalls-helper-functions.h" 3 4
+# 1 "/usr/include/bits/mathcalls-helper-functions.h" 1 3 4
+# 21 "/usr/include/bits/mathcalls-helper-functions.h" 3 4
 extern int __fpclassifyl (long double __value) throw ()
      __attribute__ ((__const__));
 
@@ -1635,8 +1645,8 @@ extern int __iseqsigl (long double __x, long double __y) throw ();
 extern int __issignalingl (long double __value) throw ()
      __attribute__ ((__const__));
 # 350 "/usr/include/math.h" 2 3 4
-# 1 "/usr/local/include/bits/mathcalls.h" 1 3 4
-# 53 "/usr/local/include/bits/mathcalls.h" 3 4
+# 1 "/usr/include/bits/mathcalls.h" 1 3 4
+# 53 "/usr/include/bits/mathcalls.h" 3 4
 extern long double acosl (long double __x) throw (); extern long double __acosl (long double __x) throw ();
 
 extern long double asinl (long double __x) throw (); extern long double __asinl (long double __x) throw ();
@@ -1753,7 +1763,7 @@ extern long double floorl (long double __x) throw () __attribute__ ((__const__))
 
 
 extern long double fmodl (long double __x, long double __y) throw (); extern long double __fmodl (long double __x, long double __y) throw ();
-# 177 "/usr/local/include/bits/mathcalls.h" 3 4
+# 177 "/usr/include/bits/mathcalls.h" 3 4
 extern int isinfl (long double __value) throw () __attribute__ ((__const__));
 
 
@@ -1778,8 +1788,8 @@ extern long double copysignl (long double __x, long double __y) throw () __attri
 
 
 
-extern long double nanl (const char *__tagb) throw () __attribute__ ((__const__)); extern long double __nanl (const char *__tagb) throw () __attribute__ ((__const__));
-# 211 "/usr/local/include/bits/mathcalls.h" 3 4
+extern long double nanl (const char *__tagb) throw (); extern long double __nanl (const char *__tagb) throw ();
+# 211 "/usr/include/bits/mathcalls.h" 3 4
 extern int isnanl (long double __value) throw () __attribute__ ((__const__));
 
 
@@ -1968,8 +1978,8 @@ extern int setpayloadsigl (long double *__x, long double __payload) throw ();
 extern long double scalbl (long double __x, long double __n) throw (); extern long double __scalbl (long double __x, long double __n) throw ();
 # 351 "/usr/include/math.h" 2 3 4
 # 389 "/usr/include/math.h" 3 4
-# 1 "/usr/local/include/bits/mathcalls.h" 1 3 4
-# 53 "/usr/local/include/bits/mathcalls.h" 3 4
+# 1 "/usr/include/bits/mathcalls.h" 1 3 4
+# 53 "/usr/include/bits/mathcalls.h" 3 4
 extern _Float32 acosf32 (_Float32 __x) throw (); extern _Float32 __acosf32 (_Float32 __x) throw ();
 
 extern _Float32 asinf32 (_Float32 __x) throw (); extern _Float32 __asinf32 (_Float32 __x) throw ();
@@ -2086,14 +2096,14 @@ extern _Float32 floorf32 (_Float32 __x) throw () __attribute__ ((__const__)); ex
 
 
 extern _Float32 fmodf32 (_Float32 __x, _Float32 __y) throw (); extern _Float32 __fmodf32 (_Float32 __x, _Float32 __y) throw ();
-# 196 "/usr/local/include/bits/mathcalls.h" 3 4
+# 196 "/usr/include/bits/mathcalls.h" 3 4
 extern _Float32 copysignf32 (_Float32 __x, _Float32 __y) throw () __attribute__ ((__const__)); extern _Float32 __copysignf32 (_Float32 __x, _Float32 __y) throw () __attribute__ ((__const__));
 
 
 
 
-extern _Float32 nanf32 (const char *__tagb) throw () __attribute__ ((__const__)); extern _Float32 __nanf32 (const char *__tagb) throw () __attribute__ ((__const__));
-# 217 "/usr/local/include/bits/mathcalls.h" 3 4
+extern _Float32 nanf32 (const char *__tagb) throw (); extern _Float32 __nanf32 (const char *__tagb) throw ();
+# 217 "/usr/include/bits/mathcalls.h" 3 4
 extern _Float32 j0f32 (_Float32) throw (); extern _Float32 __j0f32 (_Float32) throw ();
 extern _Float32 j1f32 (_Float32) throw (); extern _Float32 __j1f32 (_Float32) throw ();
 extern _Float32 jnf32 (int, _Float32) throw (); extern _Float32 __jnf32 (int, _Float32) throw ();
@@ -2113,7 +2123,7 @@ extern _Float32 lgammaf32 (_Float32) throw (); extern _Float32 __lgammaf32 (_Flo
 
 
 extern _Float32 tgammaf32 (_Float32) throw (); extern _Float32 __tgammaf32 (_Float32) throw ();
-# 249 "/usr/local/include/bits/mathcalls.h" 3 4
+# 249 "/usr/include/bits/mathcalls.h" 3 4
 extern _Float32 lgammaf32_r (_Float32, int *__signgamp) throw (); extern _Float32 __lgammaf32_r (_Float32, int *__signgamp) throw ();
 
 
@@ -2256,8 +2266,8 @@ extern int setpayloadf32 (_Float32 *__x, _Float32 __payload) throw ();
 extern int setpayloadsigf32 (_Float32 *__x, _Float32 __payload) throw ();
 # 390 "/usr/include/math.h" 2 3 4
 # 406 "/usr/include/math.h" 3 4
-# 1 "/usr/local/include/bits/mathcalls.h" 1 3 4
-# 53 "/usr/local/include/bits/mathcalls.h" 3 4
+# 1 "/usr/include/bits/mathcalls.h" 1 3 4
+# 53 "/usr/include/bits/mathcalls.h" 3 4
 extern _Float64 acosf64 (_Float64 __x) throw (); extern _Float64 __acosf64 (_Float64 __x) throw ();
 
 extern _Float64 asinf64 (_Float64 __x) throw (); extern _Float64 __asinf64 (_Float64 __x) throw ();
@@ -2374,14 +2384,14 @@ extern _Float64 floorf64 (_Float64 __x) throw () __attribute__ ((__const__)); ex
 
 
 extern _Float64 fmodf64 (_Float64 __x, _Float64 __y) throw (); extern _Float64 __fmodf64 (_Float64 __x, _Float64 __y) throw ();
-# 196 "/usr/local/include/bits/mathcalls.h" 3 4
+# 196 "/usr/include/bits/mathcalls.h" 3 4
 extern _Float64 copysignf64 (_Float64 __x, _Float64 __y) throw () __attribute__ ((__const__)); extern _Float64 __copysignf64 (_Float64 __x, _Float64 __y) throw () __attribute__ ((__const__));
 
 
 
 
-extern _Float64 nanf64 (const char *__tagb) throw () __attribute__ ((__const__)); extern _Float64 __nanf64 (const char *__tagb) throw () __attribute__ ((__const__));
-# 217 "/usr/local/include/bits/mathcalls.h" 3 4
+extern _Float64 nanf64 (const char *__tagb) throw (); extern _Float64 __nanf64 (const char *__tagb) throw ();
+# 217 "/usr/include/bits/mathcalls.h" 3 4
 extern _Float64 j0f64 (_Float64) throw (); extern _Float64 __j0f64 (_Float64) throw ();
 extern _Float64 j1f64 (_Float64) throw (); extern _Float64 __j1f64 (_Float64) throw ();
 extern _Float64 jnf64 (int, _Float64) throw (); extern _Float64 __jnf64 (int, _Float64) throw ();
@@ -2401,7 +2411,7 @@ extern _Float64 lgammaf64 (_Float64) throw (); extern _Float64 __lgammaf64 (_Flo
 
 
 extern _Float64 tgammaf64 (_Float64) throw (); extern _Float64 __tgammaf64 (_Float64) throw ();
-# 249 "/usr/local/include/bits/mathcalls.h" 3 4
+# 249 "/usr/include/bits/mathcalls.h" 3 4
 extern _Float64 lgammaf64_r (_Float64, int *__signgamp) throw (); extern _Float64 __lgammaf64_r (_Float64, int *__signgamp) throw ();
 
 
@@ -2544,8 +2554,8 @@ extern int setpayloadf64 (_Float64 *__x, _Float64 __payload) throw ();
 extern int setpayloadsigf64 (_Float64 *__x, _Float64 __payload) throw ();
 # 407 "/usr/include/math.h" 2 3 4
 # 440 "/usr/include/math.h" 3 4
-# 1 "/usr/local/include/bits/mathcalls.h" 1 3 4
-# 53 "/usr/local/include/bits/mathcalls.h" 3 4
+# 1 "/usr/include/bits/mathcalls.h" 1 3 4
+# 53 "/usr/include/bits/mathcalls.h" 3 4
 extern _Float32x acosf32x (_Float32x __x) throw (); extern _Float32x __acosf32x (_Float32x __x) throw ();
 
 extern _Float32x asinf32x (_Float32x __x) throw (); extern _Float32x __asinf32x (_Float32x __x) throw ();
@@ -2662,14 +2672,14 @@ extern _Float32x floorf32x (_Float32x __x) throw () __attribute__ ((__const__));
 
 
 extern _Float32x fmodf32x (_Float32x __x, _Float32x __y) throw (); extern _Float32x __fmodf32x (_Float32x __x, _Float32x __y) throw ();
-# 196 "/usr/local/include/bits/mathcalls.h" 3 4
+# 196 "/usr/include/bits/mathcalls.h" 3 4
 extern _Float32x copysignf32x (_Float32x __x, _Float32x __y) throw () __attribute__ ((__const__)); extern _Float32x __copysignf32x (_Float32x __x, _Float32x __y) throw () __attribute__ ((__const__));
 
 
 
 
-extern _Float32x nanf32x (const char *__tagb) throw () __attribute__ ((__const__)); extern _Float32x __nanf32x (const char *__tagb) throw () __attribute__ ((__const__));
-# 217 "/usr/local/include/bits/mathcalls.h" 3 4
+extern _Float32x nanf32x (const char *__tagb) throw (); extern _Float32x __nanf32x (const char *__tagb) throw ();
+# 217 "/usr/include/bits/mathcalls.h" 3 4
 extern _Float32x j0f32x (_Float32x) throw (); extern _Float32x __j0f32x (_Float32x) throw ();
 extern _Float32x j1f32x (_Float32x) throw (); extern _Float32x __j1f32x (_Float32x) throw ();
 extern _Float32x jnf32x (int, _Float32x) throw (); extern _Float32x __jnf32x (int, _Float32x) throw ();
@@ -2689,7 +2699,7 @@ extern _Float32x lgammaf32x (_Float32x) throw (); extern _Float32x __lgammaf32x 
 
 
 extern _Float32x tgammaf32x (_Float32x) throw (); extern _Float32x __tgammaf32x (_Float32x) throw ();
-# 249 "/usr/local/include/bits/mathcalls.h" 3 4
+# 249 "/usr/include/bits/mathcalls.h" 3 4
 extern _Float32x lgammaf32x_r (_Float32x, int *__signgamp) throw (); extern _Float32x __lgammaf32x_r (_Float32x, int *__signgamp) throw ();
 
 
@@ -2832,8 +2842,8 @@ extern int setpayloadf32x (_Float32x *__x, _Float32x __payload) throw ();
 extern int setpayloadsigf32x (_Float32x *__x, _Float32x __payload) throw ();
 # 441 "/usr/include/math.h" 2 3 4
 # 457 "/usr/include/math.h" 3 4
-# 1 "/usr/local/include/bits/mathcalls.h" 1 3 4
-# 53 "/usr/local/include/bits/mathcalls.h" 3 4
+# 1 "/usr/include/bits/mathcalls.h" 1 3 4
+# 53 "/usr/include/bits/mathcalls.h" 3 4
 extern _Float64x acosf64x (_Float64x __x) throw (); extern _Float64x __acosf64x (_Float64x __x) throw ();
 
 extern _Float64x asinf64x (_Float64x __x) throw (); extern _Float64x __asinf64x (_Float64x __x) throw ();
@@ -2950,14 +2960,14 @@ extern _Float64x floorf64x (_Float64x __x) throw () __attribute__ ((__const__));
 
 
 extern _Float64x fmodf64x (_Float64x __x, _Float64x __y) throw (); extern _Float64x __fmodf64x (_Float64x __x, _Float64x __y) throw ();
-# 196 "/usr/local/include/bits/mathcalls.h" 3 4
+# 196 "/usr/include/bits/mathcalls.h" 3 4
 extern _Float64x copysignf64x (_Float64x __x, _Float64x __y) throw () __attribute__ ((__const__)); extern _Float64x __copysignf64x (_Float64x __x, _Float64x __y) throw () __attribute__ ((__const__));
 
 
 
 
-extern _Float64x nanf64x (const char *__tagb) throw () __attribute__ ((__const__)); extern _Float64x __nanf64x (const char *__tagb) throw () __attribute__ ((__const__));
-# 217 "/usr/local/include/bits/mathcalls.h" 3 4
+extern _Float64x nanf64x (const char *__tagb) throw (); extern _Float64x __nanf64x (const char *__tagb) throw ();
+# 217 "/usr/include/bits/mathcalls.h" 3 4
 extern _Float64x j0f64x (_Float64x) throw (); extern _Float64x __j0f64x (_Float64x) throw ();
 extern _Float64x j1f64x (_Float64x) throw (); extern _Float64x __j1f64x (_Float64x) throw ();
 extern _Float64x jnf64x (int, _Float64x) throw (); extern _Float64x __jnf64x (int, _Float64x) throw ();
@@ -2977,7 +2987,7 @@ extern _Float64x lgammaf64x (_Float64x) throw (); extern _Float64x __lgammaf64x 
 
 
 extern _Float64x tgammaf64x (_Float64x) throw (); extern _Float64x __tgammaf64x (_Float64x) throw ();
-# 249 "/usr/local/include/bits/mathcalls.h" 3 4
+# 249 "/usr/include/bits/mathcalls.h" 3 4
 extern _Float64x lgammaf64x_r (_Float64x, int *__signgamp) throw (); extern _Float64x __lgammaf64x_r (_Float64x, int *__signgamp) throw ();
 
 
@@ -3119,9 +3129,135 @@ extern int setpayloadf64x (_Float64x *__x, _Float64x __payload) throw ();
 
 extern int setpayloadsigf64x (_Float64x *__x, _Float64x __payload) throw ();
 # 458 "/usr/include/math.h" 2 3 4
-# 489 "/usr/include/math.h" 3 4
+# 503 "/usr/include/math.h" 3 4
+# 1 "/usr/include/bits/mathcalls-narrow.h" 1 3 4
+# 24 "/usr/include/bits/mathcalls-narrow.h" 3 4
+extern float fadd (double __x, double __y) throw ();
+
+
+extern float fdiv (double __x, double __y) throw ();
+
+
+extern float fmul (double __x, double __y) throw ();
+
+
+extern float fsub (double __x, double __y) throw ();
+# 504 "/usr/include/math.h" 2 3 4
+# 517 "/usr/include/math.h" 3 4
+# 1 "/usr/include/bits/mathcalls-narrow.h" 1 3 4
+# 24 "/usr/include/bits/mathcalls-narrow.h" 3 4
+extern float faddl (long double __x, long double __y) throw ();
+
+
+extern float fdivl (long double __x, long double __y) throw ();
+
+
+extern float fmull (long double __x, long double __y) throw ();
+
+
+extern float fsubl (long double __x, long double __y) throw ();
+# 518 "/usr/include/math.h" 2 3 4
+# 537 "/usr/include/math.h" 3 4
+# 1 "/usr/include/bits/mathcalls-narrow.h" 1 3 4
+# 24 "/usr/include/bits/mathcalls-narrow.h" 3 4
+extern double daddl (long double __x, long double __y) throw ();
+
+
+extern double ddivl (long double __x, long double __y) throw ();
+
+
+extern double dmull (long double __x, long double __y) throw ();
+
+
+extern double dsubl (long double __x, long double __y) throw ();
+# 538 "/usr/include/math.h" 2 3 4
+# 616 "/usr/include/math.h" 3 4
+# 1 "/usr/include/bits/mathcalls-narrow.h" 1 3 4
+# 24 "/usr/include/bits/mathcalls-narrow.h" 3 4
+extern _Float32 f32addf32x (_Float32x __x, _Float32x __y) throw ();
+
+
+extern _Float32 f32divf32x (_Float32x __x, _Float32x __y) throw ();
+
+
+extern _Float32 f32mulf32x (_Float32x __x, _Float32x __y) throw ();
+
+
+extern _Float32 f32subf32x (_Float32x __x, _Float32x __y) throw ();
+# 617 "/usr/include/math.h" 2 3 4
+# 626 "/usr/include/math.h" 3 4
+# 1 "/usr/include/bits/mathcalls-narrow.h" 1 3 4
+# 24 "/usr/include/bits/mathcalls-narrow.h" 3 4
+extern _Float32 f32addf64 (_Float64 __x, _Float64 __y) throw ();
+
+
+extern _Float32 f32divf64 (_Float64 __x, _Float64 __y) throw ();
+
+
+extern _Float32 f32mulf64 (_Float64 __x, _Float64 __y) throw ();
+
+
+extern _Float32 f32subf64 (_Float64 __x, _Float64 __y) throw ();
+# 627 "/usr/include/math.h" 2 3 4
+# 636 "/usr/include/math.h" 3 4
+# 1 "/usr/include/bits/mathcalls-narrow.h" 1 3 4
+# 24 "/usr/include/bits/mathcalls-narrow.h" 3 4
+extern _Float32 f32addf64x (_Float64x __x, _Float64x __y) throw ();
+
+
+extern _Float32 f32divf64x (_Float64x __x, _Float64x __y) throw ();
+
+
+extern _Float32 f32mulf64x (_Float64x __x, _Float64x __y) throw ();
+
+
+extern _Float32 f32subf64x (_Float64x __x, _Float64x __y) throw ();
+# 637 "/usr/include/math.h" 2 3 4
+# 666 "/usr/include/math.h" 3 4
+# 1 "/usr/include/bits/mathcalls-narrow.h" 1 3 4
+# 24 "/usr/include/bits/mathcalls-narrow.h" 3 4
+extern _Float32x f32xaddf64 (_Float64 __x, _Float64 __y) throw ();
+
+
+extern _Float32x f32xdivf64 (_Float64 __x, _Float64 __y) throw ();
+
+
+extern _Float32x f32xmulf64 (_Float64 __x, _Float64 __y) throw ();
+
+
+extern _Float32x f32xsubf64 (_Float64 __x, _Float64 __y) throw ();
+# 667 "/usr/include/math.h" 2 3 4
+# 676 "/usr/include/math.h" 3 4
+# 1 "/usr/include/bits/mathcalls-narrow.h" 1 3 4
+# 24 "/usr/include/bits/mathcalls-narrow.h" 3 4
+extern _Float32x f32xaddf64x (_Float64x __x, _Float64x __y) throw ();
+
+
+extern _Float32x f32xdivf64x (_Float64x __x, _Float64x __y) throw ();
+
+
+extern _Float32x f32xmulf64x (_Float64x __x, _Float64x __y) throw ();
+
+
+extern _Float32x f32xsubf64x (_Float64x __x, _Float64x __y) throw ();
+# 677 "/usr/include/math.h" 2 3 4
+# 706 "/usr/include/math.h" 3 4
+# 1 "/usr/include/bits/mathcalls-narrow.h" 1 3 4
+# 24 "/usr/include/bits/mathcalls-narrow.h" 3 4
+extern _Float64 f64addf64x (_Float64x __x, _Float64x __y) throw ();
+
+
+extern _Float64 f64divf64x (_Float64x __x, _Float64x __y) throw ();
+
+
+extern _Float64 f64mulf64x (_Float64x __x, _Float64x __y) throw ();
+
+
+extern _Float64 f64subf64x (_Float64x __x, _Float64x __y) throw ();
+# 707 "/usr/include/math.h" 2 3 4
+# 773 "/usr/include/math.h" 3 4
 extern int signgam;
-# 569 "/usr/include/math.h" 3 4
+# 853 "/usr/include/math.h" 3 4
 enum
   {
     FP_NAN =
@@ -3140,12 +3276,12 @@ enum
 
       4
   };
-# 684 "/usr/include/math.h" 3 4
-# 1 "/usr/local/include/bits/iscanonical.h" 1 3 4
-# 23 "/usr/local/include/bits/iscanonical.h" 3 4
+# 973 "/usr/include/math.h" 3 4
+# 1 "/usr/include/bits/iscanonical.h" 1 3 4
+# 23 "/usr/include/bits/iscanonical.h" 3 4
 extern int __iscanonicall (long double __x)
      throw () __attribute__ ((__const__));
-# 46 "/usr/local/include/bits/iscanonical.h" 3 4
+# 46 "/usr/include/bits/iscanonical.h" 3 4
 extern "C++" {
 inline int iscanonical (float __val) { return ((void) (__typeof (__val)) (__val), 1); }
 inline int iscanonical (double __val) { return ((void) (__typeof (__val)) (__val), 1); }
@@ -3154,8 +3290,8 @@ inline int iscanonical (long double __val) { return __iscanonicall (__val); }
 
 
 }
-# 685 "/usr/include/math.h" 2 3 4
-# 696 "/usr/include/math.h" 3 4
+# 974 "/usr/include/math.h" 2 3 4
+# 985 "/usr/include/math.h" 3 4
 extern "C++" {
 inline int issignaling (float __val) { return __issignalingf (__val); }
 inline int issignaling (double __val) { return __issignaling (__val); }
@@ -3171,10 +3307,12 @@ issignaling (long double __val)
 
 
 
+
+
 }
-# 725 "/usr/include/math.h" 3 4
+# 1016 "/usr/include/math.h" 3 4
 extern "C++" {
-# 754 "/usr/include/math.h" 3 4
+# 1047 "/usr/include/math.h" 3 4
 template <class __T> inline bool
 iszero (__T __val)
 {
@@ -3182,7 +3320,7 @@ iszero (__T __val)
 }
 
 }
-# 1205 "/usr/include/math.h" 3 4
+# 1498 "/usr/include/math.h" 3 4
 extern "C++" {
 template<typename> struct __iseqsig_type;
 
@@ -3213,7 +3351,7 @@ template<> struct __iseqsig_type<long double>
 
   }
 };
-# 1246 "/usr/include/math.h" 3 4
+# 1541 "/usr/include/math.h" 3 4
 template<typename _T1, typename _T2>
 inline int
 iseqsig (_T1 __x, _T2 __y) throw ()
@@ -4692,7 +4830,7 @@ namespace std __attribute__ ((__visibility__ ("default")))
 # 75 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/tps/lnx64/gcc-6.2.0/lib/gcc/x86_64-pc-linux-gnu/6.2.0/../../../../include/c++/6.2.0/cstdlib" 3
 # 1 "/usr/include/stdlib.h" 1 3 4
 # 25 "/usr/include/stdlib.h" 3 4
-# 1 "/usr/local/include/bits/libc-header-start.h" 1 3 4
+# 1 "/usr/include/bits/libc-header-start.h" 1 3 4
 # 26 "/usr/include/stdlib.h" 2 3 4
 
 
@@ -4711,16 +4849,9 @@ extern "C" {
 
 
 
-# 1 "/usr/local/include/bits/waitflags.h" 1 3 4
-# 52 "/usr/local/include/bits/waitflags.h" 3 4
-typedef enum
-{
-  P_ALL,
-  P_PID,
-  P_PGID
-} idtype_t;
+# 1 "/usr/include/bits/waitflags.h" 1 3 4
 # 40 "/usr/include/stdlib.h" 2 3 4
-# 1 "/usr/local/include/bits/waitstatus.h" 1 3 4
+# 1 "/usr/include/bits/waitstatus.h" 1 3 4
 # 41 "/usr/include/stdlib.h" 2 3 4
 # 58 "/usr/include/stdlib.h" 3 4
 typedef struct
@@ -4868,10 +4999,10 @@ extern int strfromf64x (char *__dest, size_t __size, const char * __format,
    _Float64x __f)
      throw () __attribute__ ((__nonnull__ (3)));
 # 272 "/usr/include/stdlib.h" 3 4
-# 1 "/usr/local/include/bits/types/locale_t.h" 1 3 4
-# 22 "/usr/local/include/bits/types/locale_t.h" 3 4
-# 1 "/usr/local/include/bits/types/__locale_t.h" 1 3 4
-# 28 "/usr/local/include/bits/types/__locale_t.h" 3 4
+# 1 "/usr/include/bits/types/locale_t.h" 1 3 4
+# 22 "/usr/include/bits/types/locale_t.h" 3 4
+# 1 "/usr/include/bits/types/__locale_t.h" 1 3 4
+# 28 "/usr/include/bits/types/__locale_t.h" 3 4
 struct __locale_struct
 {
 
@@ -4887,7 +5018,7 @@ struct __locale_struct
 };
 
 typedef struct __locale_struct *__locale_t;
-# 23 "/usr/local/include/bits/types/locale_t.h" 2 3 4
+# 23 "/usr/include/bits/types/locale_t.h" 2 3 4
 
 typedef __locale_t locale_t;
 # 273 "/usr/include/stdlib.h" 2 3 4
@@ -4960,8 +5091,8 @@ extern long int a64l (const char *__s)
 
 
 
-# 1 "/usr/local/include/sys/types.h" 1 3 4
-# 27 "/usr/local/include/sys/types.h" 3 4
+# 1 "/usr/include/sys/types.h" 1 3 4
+# 27 "/usr/include/sys/types.h" 3 4
 extern "C" {
 
 
@@ -4977,9 +5108,8 @@ typedef __u_quad_t u_quad_t;
 typedef __fsid_t fsid_t;
 
 
-
-
 typedef __loff_t loff_t;
+
 
 
 
@@ -5063,7 +5193,7 @@ typedef __key_t key_t;
 
 
 
-# 1 "/usr/local/include/bits/types/clock_t.h" 1 3 4
+# 1 "/usr/include/bits/types/clock_t.h" 1 3 4
 
 
 
@@ -5071,9 +5201,9 @@ typedef __key_t key_t;
 
 
 typedef __clock_t clock_t;
-# 128 "/usr/local/include/sys/types.h" 2 3 4
+# 127 "/usr/include/sys/types.h" 2 3 4
 
-# 1 "/usr/local/include/bits/types/clockid_t.h" 1 3 4
+# 1 "/usr/include/bits/types/clockid_t.h" 1 3 4
 
 
 
@@ -5081,8 +5211,8 @@ typedef __clock_t clock_t;
 
 
 typedef __clockid_t clockid_t;
-# 130 "/usr/local/include/sys/types.h" 2 3 4
-# 1 "/usr/local/include/bits/types/time_t.h" 1 3 4
+# 129 "/usr/include/sys/types.h" 2 3 4
+# 1 "/usr/include/bits/types/time_t.h" 1 3 4
 
 
 
@@ -5090,8 +5220,8 @@ typedef __clockid_t clockid_t;
 
 
 typedef __time_t time_t;
-# 131 "/usr/local/include/sys/types.h" 2 3 4
-# 1 "/usr/local/include/bits/types/timer_t.h" 1 3 4
+# 130 "/usr/include/sys/types.h" 2 3 4
+# 1 "/usr/include/bits/types/timer_t.h" 1 3 4
 
 
 
@@ -5099,7 +5229,7 @@ typedef __time_t time_t;
 
 
 typedef __timer_t timer_t;
-# 132 "/usr/local/include/sys/types.h" 2 3 4
+# 131 "/usr/include/sys/types.h" 2 3 4
 
 
 
@@ -5115,7 +5245,7 @@ typedef __suseconds_t suseconds_t;
 
 
 # 1 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/lnx64/tools/clang-3.9-csynth/lib/clang/7.0.0/include/stddef.h" 1 3 4
-# 146 "/usr/local/include/sys/types.h" 2 3 4
+# 145 "/usr/include/sys/types.h" 2 3 4
 
 
 
@@ -5127,41 +5257,67 @@ typedef unsigned int uint;
 
 
 
-# 1 "/usr/local/include/bits/stdint-intn.h" 1 3 4
-# 24 "/usr/local/include/bits/stdint-intn.h" 3 4
+# 1 "/usr/include/bits/stdint-intn.h" 1 3 4
+# 24 "/usr/include/bits/stdint-intn.h" 3 4
 typedef __int8_t int8_t;
 typedef __int16_t int16_t;
 typedef __int32_t int32_t;
 typedef __int64_t int64_t;
-# 157 "/usr/local/include/sys/types.h" 2 3 4
-# 178 "/usr/local/include/sys/types.h" 3 4
-typedef unsigned int u_int8_t __attribute__ ((__mode__ (__QI__)));
-typedef unsigned int u_int16_t __attribute__ ((__mode__ (__HI__)));
-typedef unsigned int u_int32_t __attribute__ ((__mode__ (__SI__)));
-typedef unsigned int u_int64_t __attribute__ ((__mode__ (__DI__)));
+# 156 "/usr/include/sys/types.h" 2 3 4
+
+
+typedef __uint8_t u_int8_t;
+typedef __uint16_t u_int16_t;
+typedef __uint32_t u_int32_t;
+typedef __uint64_t u_int64_t;
+
 
 typedef int register_t __attribute__ ((__mode__ (__word__)));
-# 194 "/usr/local/include/sys/types.h" 3 4
+# 176 "/usr/include/sys/types.h" 3 4
 # 1 "/usr/include/endian.h" 1 3 4
 # 36 "/usr/include/endian.h" 3 4
-# 1 "/usr/local/include/bits/endian.h" 1 3 4
+# 1 "/usr/include/bits/endian.h" 1 3 4
 # 37 "/usr/include/endian.h" 2 3 4
 # 60 "/usr/include/endian.h" 3 4
-# 1 "/usr/local/include/bits/byteswap.h" 1 3 4
-# 28 "/usr/local/include/bits/byteswap.h" 3 4
-# 1 "/usr/local/include/bits/wordsize.h" 1 3 4
-# 29 "/usr/local/include/bits/byteswap.h" 2 3 4
+# 1 "/usr/include/bits/byteswap.h" 1 3 4
+# 33 "/usr/include/bits/byteswap.h" 3 4
+static __inline __uint16_t
+__bswap_16 (__uint16_t __bsx)
+{
+
+
+
+  return ((__uint16_t) ((((__bsx) >> 8) & 0xff) | (((__bsx) & 0xff) << 8)));
+
+}
 
 
 
 
 
 
-# 1 "/usr/local/include/bits/byteswap-16.h" 1 3 4
-# 36 "/usr/local/include/bits/byteswap.h" 2 3 4
+static __inline __uint32_t
+__bswap_32 (__uint32_t __bsx)
+{
+
+
+
+  return ((((__bsx) & 0xff000000u) >> 24) | (((__bsx) & 0x00ff0000u) >> 8) | (((__bsx) & 0x0000ff00u) << 8) | (((__bsx) & 0x000000ffu) << 24));
+
+}
+# 69 "/usr/include/bits/byteswap.h" 3 4
+__extension__ static __inline __uint64_t
+__bswap_64 (__uint64_t __bsx)
+{
+
+
+
+  return ((((__bsx) & 0xff00000000000000ull) >> 56) | (((__bsx) & 0x00ff000000000000ull) >> 40) | (((__bsx) & 0x0000ff0000000000ull) >> 24) | (((__bsx) & 0x000000ff00000000ull) >> 8) | (((__bsx) & 0x00000000ff000000ull) << 8) | (((__bsx) & 0x0000000000ff0000ull) << 24) | (((__bsx) & 0x000000000000ff00ull) << 40) | (((__bsx) & 0x00000000000000ffull) << 56));
+
+}
 # 61 "/usr/include/endian.h" 2 3 4
-# 1 "/usr/local/include/bits/uintn-identity.h" 1 3 4
-# 32 "/usr/local/include/bits/uintn-identity.h" 3 4
+# 1 "/usr/include/bits/uintn-identity.h" 1 3 4
+# 32 "/usr/include/bits/uintn-identity.h" 3 4
 static __inline __uint16_t
 __uint16_identity (__uint16_t __x)
 {
@@ -5180,23 +5336,23 @@ __uint64_identity (__uint64_t __x)
   return __x;
 }
 # 62 "/usr/include/endian.h" 2 3 4
-# 195 "/usr/local/include/sys/types.h" 2 3 4
+# 177 "/usr/include/sys/types.h" 2 3 4
 
 
-# 1 "/usr/local/include/sys/select.h" 1 3 4
-# 30 "/usr/local/include/sys/select.h" 3 4
-# 1 "/usr/local/include/bits/select.h" 1 3 4
-# 22 "/usr/local/include/bits/select.h" 3 4
-# 1 "/usr/local/include/bits/wordsize.h" 1 3 4
-# 23 "/usr/local/include/bits/select.h" 2 3 4
-# 31 "/usr/local/include/sys/select.h" 2 3 4
+# 1 "/usr/include/sys/select.h" 1 3 4
+# 30 "/usr/include/sys/select.h" 3 4
+# 1 "/usr/include/bits/select.h" 1 3 4
+# 22 "/usr/include/bits/select.h" 3 4
+# 1 "/usr/include/bits/wordsize.h" 1 3 4
+# 23 "/usr/include/bits/select.h" 2 3 4
+# 31 "/usr/include/sys/select.h" 2 3 4
 
 
-# 1 "/usr/local/include/bits/types/sigset_t.h" 1 3 4
+# 1 "/usr/include/bits/types/sigset_t.h" 1 3 4
 
 
 
-# 1 "/usr/local/include/bits/types/__sigset_t.h" 1 3 4
+# 1 "/usr/include/bits/types/__sigset_t.h" 1 3 4
 
 
 
@@ -5205,15 +5361,15 @@ typedef struct
 {
   unsigned long int __val[(1024 / (8 * sizeof (unsigned long int)))];
 } __sigset_t;
-# 5 "/usr/local/include/bits/types/sigset_t.h" 2 3 4
+# 5 "/usr/include/bits/types/sigset_t.h" 2 3 4
 
 
 typedef __sigset_t sigset_t;
-# 34 "/usr/local/include/sys/select.h" 2 3 4
+# 34 "/usr/include/sys/select.h" 2 3 4
 
 
 
-# 1 "/usr/local/include/bits/types/struct_timeval.h" 1 3 4
+# 1 "/usr/include/bits/types/struct_timeval.h" 1 3 4
 
 
 
@@ -5226,9 +5382,9 @@ struct timeval
   __time_t tv_sec;
   __suseconds_t tv_usec;
 };
-# 38 "/usr/local/include/sys/select.h" 2 3 4
+# 38 "/usr/include/sys/select.h" 2 3 4
 
-# 1 "/usr/local/include/bits/types/struct_timespec.h" 1 3 4
+# 1 "/usr/include/bits/types/struct_timespec.h" 1 3 4
 
 
 
@@ -5242,10 +5398,10 @@ struct timespec
   __time_t tv_sec;
   __syscall_slong_t tv_nsec;
 };
-# 40 "/usr/local/include/sys/select.h" 2 3 4
-# 49 "/usr/local/include/sys/select.h" 3 4
+# 40 "/usr/include/sys/select.h" 2 3 4
+# 49 "/usr/include/sys/select.h" 3 4
 typedef long int __fd_mask;
-# 59 "/usr/local/include/sys/select.h" 3 4
+# 59 "/usr/include/sys/select.h" 3 4
 typedef struct
   {
 
@@ -5265,43 +5421,22 @@ typedef struct
 
 
 typedef __fd_mask fd_mask;
-# 91 "/usr/local/include/sys/select.h" 3 4
+# 91 "/usr/include/sys/select.h" 3 4
 extern "C" {
-# 101 "/usr/local/include/sys/select.h" 3 4
+# 101 "/usr/include/sys/select.h" 3 4
 extern int select (int __nfds, fd_set *__restrict __readfds,
      fd_set *__restrict __writefds,
      fd_set *__restrict __exceptfds,
      struct timeval *__restrict __timeout);
-# 113 "/usr/local/include/sys/select.h" 3 4
+# 113 "/usr/include/sys/select.h" 3 4
 extern int pselect (int __nfds, fd_set *__restrict __readfds,
       fd_set *__restrict __writefds,
       fd_set *__restrict __exceptfds,
       const struct timespec *__restrict __timeout,
       const __sigset_t *__restrict __sigmask);
-# 126 "/usr/local/include/sys/select.h" 3 4
+# 126 "/usr/include/sys/select.h" 3 4
 }
-# 198 "/usr/local/include/sys/types.h" 2 3 4
-
-
-
-
-
-
-
-# 1 "/usr/local/include/sys/sysmacros.h" 1 3 4
-# 41 "/usr/local/include/sys/sysmacros.h" 3 4
-# 1 "/usr/local/include/bits/sysmacros.h" 1 3 4
-# 42 "/usr/local/include/sys/sysmacros.h" 2 3 4
-# 71 "/usr/local/include/sys/sysmacros.h" 3 4
-extern "C" {
-
-extern unsigned int gnu_dev_major (__dev_t __dev) throw () __attribute__ ((__const__));
-extern unsigned int gnu_dev_minor (__dev_t __dev) throw () __attribute__ ((__const__));
-extern __dev_t gnu_dev_makedev (unsigned int __major, unsigned int __minor) throw () __attribute__ ((__const__));
-# 85 "/usr/local/include/sys/sysmacros.h" 3 4
-}
-# 206 "/usr/local/include/sys/types.h" 2 3 4
-
+# 180 "/usr/include/sys/types.h" 2 3 4
 
 
 
@@ -5323,7 +5458,7 @@ typedef __fsblkcnt_t fsblkcnt_t;
 
 
 typedef __fsfilcnt_t fsfilcnt_t;
-# 246 "/usr/local/include/sys/types.h" 3 4
+# 219 "/usr/include/sys/types.h" 3 4
 typedef __blkcnt64_t blkcnt64_t;
 typedef __fsblkcnt64_t fsblkcnt64_t;
 typedef __fsfilcnt64_t fsfilcnt64_t;
@@ -5333,15 +5468,15 @@ typedef __fsfilcnt64_t fsfilcnt64_t;
 
 
 
-# 1 "/usr/local/include/bits/pthreadtypes.h" 1 3 4
-# 23 "/usr/local/include/bits/pthreadtypes.h" 3 4
-# 1 "/usr/local/include/bits/thread-shared-types.h" 1 3 4
-# 77 "/usr/local/include/bits/thread-shared-types.h" 3 4
-# 1 "/usr/local/include/bits/pthreadtypes-arch.h" 1 3 4
-# 21 "/usr/local/include/bits/pthreadtypes-arch.h" 3 4
-# 1 "/usr/local/include/bits/wordsize.h" 1 3 4
-# 22 "/usr/local/include/bits/pthreadtypes-arch.h" 2 3 4
-# 65 "/usr/local/include/bits/pthreadtypes-arch.h" 3 4
+# 1 "/usr/include/bits/pthreadtypes.h" 1 3 4
+# 23 "/usr/include/bits/pthreadtypes.h" 3 4
+# 1 "/usr/include/bits/thread-shared-types.h" 1 3 4
+# 77 "/usr/include/bits/thread-shared-types.h" 3 4
+# 1 "/usr/include/bits/pthreadtypes-arch.h" 1 3 4
+# 21 "/usr/include/bits/pthreadtypes-arch.h" 3 4
+# 1 "/usr/include/bits/wordsize.h" 1 3 4
+# 22 "/usr/include/bits/pthreadtypes-arch.h" 2 3 4
+# 65 "/usr/include/bits/pthreadtypes-arch.h" 3 4
 struct __pthread_rwlock_arch_t
 {
   unsigned int __readers;
@@ -5365,9 +5500,9 @@ struct __pthread_rwlock_arch_t
 
 
   unsigned int __flags;
-# 99 "/usr/local/include/bits/pthreadtypes-arch.h" 3 4
+# 99 "/usr/include/bits/pthreadtypes-arch.h" 3 4
 };
-# 78 "/usr/local/include/bits/thread-shared-types.h" 2 3 4
+# 78 "/usr/include/bits/thread-shared-types.h" 2 3 4
 
 
 
@@ -5377,7 +5512,7 @@ typedef struct __pthread_internal_list
   struct __pthread_internal_list *__prev;
   struct __pthread_internal_list *__next;
 } __pthread_list_t;
-# 118 "/usr/local/include/bits/thread-shared-types.h" 3 4
+# 118 "/usr/include/bits/thread-shared-types.h" 3 4
 struct __pthread_mutex_s
 {
   int __lock ;
@@ -5385,7 +5520,7 @@ struct __pthread_mutex_s
   int __owner;
 
   unsigned int __nusers;
-# 148 "/usr/local/include/bits/thread-shared-types.h" 3 4
+# 148 "/usr/include/bits/thread-shared-types.h" 3 4
   int __kind;
 
 
@@ -5394,7 +5529,7 @@ struct __pthread_mutex_s
 
   short __spins; short __elision;
   __pthread_list_t __list;
-# 166 "/usr/local/include/bits/thread-shared-types.h" 3 4
+# 166 "/usr/include/bits/thread-shared-types.h" 3 4
 };
 
 
@@ -5420,13 +5555,13 @@ struct __pthread_cond_s
       unsigned int __high;
     } __g1_start32;
   };
-  unsigned int __g_refs[2] ;
+  unsigned int __glibc_unused___g_refs[2] ;
   unsigned int __g_size[2];
   unsigned int __g1_orig_size;
   unsigned int __wrefs;
   unsigned int __g_signals[2];
 };
-# 24 "/usr/local/include/bits/pthreadtypes.h" 2 3 4
+# 24 "/usr/include/bits/pthreadtypes.h" 2 3 4
 
 
 
@@ -5522,7 +5657,7 @@ typedef union
   char __size[4];
   int __align;
 } pthread_barrierattr_t;
-# 255 "/usr/local/include/sys/types.h" 2 3 4
+# 228 "/usr/include/sys/types.h" 2 3 4
 
 
 }
@@ -5986,12 +6121,6 @@ extern int getsubopt (char **__restrict __optionp,
 
 
 
-extern void setkey (const char *__key) throw () __attribute__ ((__nonnull__ (1)));
-
-
-
-
-
 
 
 extern int posix_openpt (int __oflag) ;
@@ -6031,10 +6160,10 @@ extern int getpt (void);
 
 extern int getloadavg (double __loadavg[], int __nelem)
      throw () __attribute__ ((__nonnull__ (1)));
-# 1016 "/usr/include/stdlib.h" 3 4
-# 1 "/usr/local/include/bits/stdlib-float.h" 1 3 4
-# 1017 "/usr/include/stdlib.h" 2 3 4
-# 1026 "/usr/include/stdlib.h" 3 4
+# 1010 "/usr/include/stdlib.h" 3 4
+# 1 "/usr/include/bits/stdlib-float.h" 1 3 4
+# 1011 "/usr/include/stdlib.h" 2 3 4
+# 1020 "/usr/include/stdlib.h" 3 4
 }
 # 76 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/tps/lnx64/gcc-6.2.0/lib/gcc/x86_64-pc-linux-gnu/6.2.0/../../../../include/c++/6.2.0/cstdlib" 2 3
 # 118 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/tps/lnx64/gcc-6.2.0/lib/gcc/x86_64-pc-linux-gnu/6.2.0/../../../../include/c++/6.2.0/cstdlib" 3
@@ -6164,9 +6293,72 @@ namespace std
 
 }
 # 3 "likelihood_kernel.cpp" 2
-# 1 "./likelihood_kernel.h" 1
+# 1 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/lnx64/tools/clang-3.9-csynth/lib/clang/7.0.0/include/stdint.h" 1 3
+# 63 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/lnx64/tools/clang-3.9-csynth/lib/clang/7.0.0/include/stdint.h" 3
+# 1 "/usr/include/stdint.h" 1 3 4
+# 26 "/usr/include/stdint.h" 3 4
+# 1 "/usr/include/bits/libc-header-start.h" 1 3 4
+# 27 "/usr/include/stdint.h" 2 3 4
+
+# 1 "/usr/include/bits/wchar.h" 1 3 4
+# 29 "/usr/include/stdint.h" 2 3 4
+# 1 "/usr/include/bits/wordsize.h" 1 3 4
+# 30 "/usr/include/stdint.h" 2 3 4
 
 
+
+
+
+
+
+# 1 "/usr/include/bits/stdint-uintn.h" 1 3 4
+# 24 "/usr/include/bits/stdint-uintn.h" 3 4
+typedef __uint8_t uint8_t;
+typedef __uint16_t uint16_t;
+typedef __uint32_t uint32_t;
+typedef __uint64_t uint64_t;
+# 38 "/usr/include/stdint.h" 2 3 4
+
+
+
+
+
+typedef __int_least8_t int_least8_t;
+typedef __int_least16_t int_least16_t;
+typedef __int_least32_t int_least32_t;
+typedef __int_least64_t int_least64_t;
+
+
+typedef __uint_least8_t uint_least8_t;
+typedef __uint_least16_t uint_least16_t;
+typedef __uint_least32_t uint_least32_t;
+typedef __uint_least64_t uint_least64_t;
+
+
+
+
+
+typedef signed char int_fast8_t;
+
+typedef long int int_fast16_t;
+typedef long int int_fast32_t;
+typedef long int int_fast64_t;
+# 71 "/usr/include/stdint.h" 3 4
+typedef unsigned char uint_fast8_t;
+
+typedef unsigned long int uint_fast16_t;
+typedef unsigned long int uint_fast32_t;
+typedef unsigned long int uint_fast64_t;
+# 87 "/usr/include/stdint.h" 3 4
+typedef long int intptr_t;
+
+
+typedef unsigned long int uintptr_t;
+# 101 "/usr/include/stdint.h" 3 4
+typedef __intmax_t intmax_t;
+typedef __uintmax_t uintmax_t;
+# 64 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/lnx64/tools/clang-3.9-csynth/lib/clang/7.0.0/include/stdint.h" 2 3
+# 4 "likelihood_kernel.cpp" 2
 
 # 1 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/common/technology/autopilot/ap_int.h" 1
 # 55 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/common/technology/autopilot/ap_int.h"
@@ -11593,6 +11785,13 @@ inline bool operator!=(
 }
 # 396 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/common/technology/autopilot/ap_fixed.h" 2
 # 365 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/common/technology/autopilot/ap_int.h" 2
+# 6 "likelihood_kernel.cpp" 2
+
+# 1 "./likelihood_kernel.h" 1
+
+
+
+# 1 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/common/technology/autopilot/ap_int.h" 1
 # 5 "./likelihood_kernel.h" 2
 
 
@@ -11619,88 +11818,19 @@ __attribute__((sdx_kernel("likelihood_kernel", 0))) void likelihood_kernel(int N
 
 
 }
-# 4 "likelihood_kernel.cpp" 2
-
-# 1 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/common/technology/autopilot/ap_int.h" 1
-# 6 "likelihood_kernel.cpp" 2
-# 1 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/lnx64/tools/clang-3.9-csynth/lib/clang/7.0.0/include/stdint.h" 1 3
-# 63 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/lnx64/tools/clang-3.9-csynth/lib/clang/7.0.0/include/stdint.h" 3
-# 1 "/usr/include/stdint.h" 1 3 4
-# 26 "/usr/include/stdint.h" 3 4
-# 1 "/usr/local/include/bits/libc-header-start.h" 1 3 4
-# 27 "/usr/include/stdint.h" 2 3 4
-
-# 1 "/usr/local/include/bits/wchar.h" 1 3 4
-# 29 "/usr/include/stdint.h" 2 3 4
-# 1 "/usr/local/include/bits/wordsize.h" 1 3 4
-# 30 "/usr/include/stdint.h" 2 3 4
+# 8 "likelihood_kernel.cpp" 2
 
 
 
 
 
-
-
-# 1 "/usr/local/include/bits/stdint-uintn.h" 1 3 4
-# 24 "/usr/local/include/bits/stdint-uintn.h" 3 4
-typedef __uint8_t uint8_t;
-typedef __uint16_t uint16_t;
-typedef __uint32_t uint32_t;
-typedef __uint64_t uint64_t;
-# 38 "/usr/include/stdint.h" 2 3 4
-
-
-
-
-
-typedef signed char int_least8_t;
-typedef short int int_least16_t;
-typedef int int_least32_t;
-
-typedef long int int_least64_t;
-
-
-
-
-
-
-typedef unsigned char uint_least8_t;
-typedef unsigned short int uint_least16_t;
-typedef unsigned int uint_least32_t;
-
-typedef unsigned long int uint_least64_t;
-# 68 "/usr/include/stdint.h" 3 4
-typedef signed char int_fast8_t;
-
-typedef long int int_fast16_t;
-typedef long int int_fast32_t;
-typedef long int int_fast64_t;
-# 81 "/usr/include/stdint.h" 3 4
-typedef unsigned char uint_fast8_t;
-
-typedef unsigned long int uint_fast16_t;
-typedef unsigned long int uint_fast32_t;
-typedef unsigned long int uint_fast64_t;
-# 97 "/usr/include/stdint.h" 3 4
-typedef long int intptr_t;
-
-
-typedef unsigned long int uintptr_t;
-# 111 "/usr/include/stdint.h" 3 4
-typedef __intmax_t intmax_t;
-typedef __uintmax_t uintmax_t;
-# 64 "/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/lnx64/tools/clang-3.9-csynth/lib/clang/7.0.0/include/stdint.h" 2 3
-# 7 "likelihood_kernel.cpp" 2
-
-
-
-
-
+static const double kPixelScaleNum = 256.0;
+static const double kPixelBiasNum = 41984.0;
+static const double kPixelDen = 50.0;
 
 inline int roundDouble(double value) {
     return static_cast<int>(value + 0.5);
 }
-
 
 inline double bits_to_double(uint64_t bits) {
     union {
@@ -11720,161 +11850,157 @@ inline uint64_t double_to_bits(double val) {
     return conv.u;
 }
 
-
 void load_objxy(const double* objxy,
-  double buffer_objxy[80 * 2],
-  int countOnes){
-
+                int buffer_obj_offsets[80],
+                int countOnes,
+                int IszY,
+                int Nfr) {
 #pragma HLS INLINE
- loadObjxy:
-  for (int i = 0; i < 80 * 2; i++) {
+loadObjxy:
+    for (int i = 0; i < 80; i++) {
 #pragma HLS PIPELINE II=1
-#pragma HLS LOOP_TRIPCOUNT min=140 max =160
- if (i < countOnes *2) {
-    buffer_objxy[i] = objxy[i];
-   }
-  }
+#pragma HLS LOOP_TRIPCOUNT min=70 max=80
+ if (i < countOnes) {
+            int offY = roundDouble(objxy[i * 2]);
+            int offX = roundDouble(objxy[i * 2 + 1]);
+            buffer_obj_offsets[i] = offX * IszY * Nfr + offY * Nfr;
+        }
+    }
 }
 
-
 void load_particles(const wide_t* arrayX,
-      const wide_t* arrayY,
-      double buffer_X[64],
-      double buffer_Y[64],
-      int base,
-      int tileSize){
-
-#pragma HLS INLINE
+                    const wide_t* arrayY,
+                    double buffer_X[64],
+                    double buffer_Y[64],
+                    int base,
+                    int tileSize) {
+#pragma HLS INLINE off
 
  const int base_word = base / (512 / 64);
-    const int num_words = (tileSize + (512 / 64) - 1) / (512 / 64);
+    const int valid_words = (tileSize + (512 / 64) - 1) / (512 / 64);
 
 loadParticlesWide:
-    for (int w = 0; w < 64 / (512 / 64); w++) {
+    for (int w = 0; w < (64 / (512 / 64)); w++) {
 #pragma HLS PIPELINE II=1
 #pragma HLS LOOP_TRIPCOUNT min=8 max=8
+ wide_t xpack = 0;
+        wide_t ypack = 0;
 
- if (w < num_words) {
-            wide_t xpack = arrayX[base_word + w];
-            wide_t ypack = arrayY[base_word + w];
+        if (w < valid_words) {
+            xpack = arrayX[base_word + w];
+            ypack = arrayY[base_word + w];
+        }
 
-        unpackWord:
-            for (int d = 0; d < (512 / 64); d++) {
+    unpackWord:
+        for (int d = 0; d < (512 / 64); d++) {
 #pragma HLS UNROLL
- int idx = w * (512 / 64) + d;
+ const int idx = w * (512 / 64) + d;
 
-                if (idx < tileSize) {
-                    uint64_t xbits = (uint64_t)xpack.range((d + 1) * 64 - 1, d * 64);
-                    uint64_t ybits = (uint64_t)ypack.range((d + 1) * 64 - 1, d * 64);
-
-                    buffer_X[idx] = bits_to_double(xbits);
-                    buffer_Y[idx] = bits_to_double(ybits);
-                }
+            if (idx < tileSize) {
+                uint64_t xbits =
+                    (uint64_t)xpack.range((d + 1) * 64 - 1, d * 64);
+                uint64_t ybits =
+                    (uint64_t)ypack.range((d + 1) * 64 - 1, d * 64);
+                buffer_X[idx] = bits_to_double(xbits);
+                buffer_Y[idx] = bits_to_double(ybits);
+            } else {
+                buffer_X[idx] = 0.0;
+                buffer_Y[idx] = 0.0;
             }
         }
     }
 }
 
-
 void compute_likelihood(const double buffer_X[64],
-   const double buffer_Y[64],
-   const double buffer_objxy[80 * 2],
-   int countOnes,
-   int IszY,
-   int Nfr,
-   int k,
-   long max_size,
-   const int* I,
-   double buffer_likelihood[64],
-   int tileSize){
+                        const double buffer_Y[64],
+                        const int buffer_obj_offsets[80],
+                        int countOnes,
+                        int IszY,
+                        int Nfr,
+                        int k,
+                        long max_size,
+                        const int* I,
+                        double buffer_likelihood[64],
+                        int tileSize) {
+#pragma HLS INLINE off
 
-#pragma HLS INLINE
+ const double inv_count = 1.0 / (double)countOnes;
+    const double scale = (kPixelScaleNum / kPixelDen) * inv_count;
+    const double bias = kPixelBiasNum / kPixelDen;
 
 computeParticles:
     for (int x = 0; x < tileSize; x++) {
 #pragma HLS LOOP_TRIPCOUNT min=64 max=64
-
  int px = roundDouble(buffer_X[x]);
         int py = roundDouble(buffer_Y[x]);
-        double sum = 0.0;
+        const int particle_base = px * IszY * Nfr + py * Nfr + k;
+        int pixel_sum = 0;
 
     accumulatePoints:
         for (int y = 0; y < countOnes; y++) {
 #pragma HLS PIPELINE II=1
 #pragma HLS LOOP_TRIPCOUNT min=70 max=80
-#pragma HLS UNROLL factor=2
-
- int offY = roundDouble(buffer_objxy[y * 2]);
-            int offX = roundDouble(buffer_objxy[y * 2 + 1]);
-
-            int indX = px + offX;
-            int indY = py + offY;
-
-            int idx = std::abs(indX * IszY * Nfr + indY * Nfr + k);
-
+ int idx = std::abs(particle_base + buffer_obj_offsets[y]);
             if (idx >= max_size) {
                 idx = 0;
             }
-
-            int pix = I[idx];
-            int a = pix - 100;
-            int b = pix - 228;
-
-            sum += ((double)(a * a) - (double)(b * b)) / 50.0;
+            pixel_sum += I[idx];
         }
 
-        buffer_likelihood[x] = sum / (double)countOnes;
+        buffer_likelihood[x] = scale * (double)pixel_sum - bias;
     }
 }
 
 void store_likelihood(wide_t* likelihood,
-        const double buffer_likelihood[64],
-        int base,
-        int tileSize) {
-#pragma HLS INLINE
+                      const double buffer_likelihood[64],
+                      int base,
+                      int tileSize) {
+#pragma HLS INLINE off
 
  const int base_word = base / (512 / 64);
+    const int full_words = tileSize / (512 / 64);
+    const int remainder = tileSize % (512 / 64);
 
 storeLikelihoodWide:
-    for (int w = 0; w < tileSize / (512 / 64); w++) {
+    for (int w = 0; w < (64 / (512 / 64)); w++) {
 #pragma HLS PIPELINE II=1
 #pragma HLS LOOP_TRIPCOUNT min=8 max=8
+ const bool write_word =
+            (w < full_words) || ((w == full_words) && (remainder != 0));
 
- wide_t out_pack = 0;
+        if (write_word) {
+            wide_t out_pack = 0;
 
-    packWord:
-        for (int d = 0; d < (512 / 64); d++) {
+        packWord:
+            for (int d = 0; d < (512 / 64); d++) {
 #pragma HLS UNROLL
- uint64_t bits = double_to_bits(buffer_likelihood[w * (512 / 64) + d]);
-            out_pack.range((d + 1) * 64 - 1, d * 64) = bits;
+ uint64_t bits = 0;
+                const int idx = w * (512 / 64) + d;
+                if (idx < tileSize) {
+                    bits = double_to_bits(buffer_likelihood[idx]);
+                }
+                out_pack.range((d + 1) * 64 - 1, d * 64) = bits;
+            }
+
+            likelihood[base_word + w] = out_pack;
         }
-
-        likelihood[base_word + w] = out_pack;
-    }
-
-storeLikelihoodRemainder:
-    for (int x = (tileSize / (512 / 64)) * (512 / 64); x < tileSize; x++) {
-#pragma HLS PIPELINE II=1
- double* likelihood_scalar = reinterpret_cast<double*>(likelihood);
-        likelihood_scalar[base + x] = buffer_likelihood[x];
     }
 }
 
 extern "C" {
 __attribute__((sdx_kernel("likelihood_kernel", 0))) void likelihood_kernel(int Nparticles,
-         int countOnes,
-         int IszY,
-         int Nfr,
-         int k,
-         long max_size,
-         const wide_t* arrayX,
-         const wide_t* arrayY,
-         const double* objxy,
-         const int* I,
-         wide_t* likelihood){
+                       int countOnes,
+                       int IszY,
+                       int Nfr,
+                       int k,
+                       long max_size,
+                       const wide_t* arrayX,
+                       const wide_t* arrayY,
+                       const double* objxy,
+                       const int* I,
+                       wide_t* likelihood) {
 #pragma HLS TOP name=likelihood_kernel
 # 187 "likelihood_kernel.cpp"
-
 
 #pragma HLS INTERFACE m_axi port=arrayX offset=slave bundle=gmem0
 #pragma HLS INTERFACE m_axi port=arrayY offset=slave bundle=gmem1
@@ -11895,39 +12021,37 @@ __attribute__((sdx_kernel("likelihood_kernel", 0))) void likelihood_kernel(int N
 #pragma HLS INTERFACE s_axilite port=likelihood bundle=control
 #pragma HLS INTERFACE s_axilite port=return bundle=control
 
- double buffer_objxy[80 * 2];
- double buffer_X[64];
- double buffer_Y[64];
- double buffer_likelihood[64];
+ int buffer_obj_offsets[80];
+    double buffer_X[64];
+    double buffer_Y[64];
+    double buffer_likelihood[64];
 
-#pragma HLS BIND_STORAGE variable=buffer_objxy type=ram_2p impl=bram
+#pragma HLS BIND_STORAGE variable=buffer_obj_offsets type=ram_2p impl=bram
 #pragma HLS BIND_STORAGE variable=buffer_X type=ram_2p impl=bram
 #pragma HLS BIND_STORAGE variable=buffer_Y type=ram_2p impl=bram
 #pragma HLS BIND_STORAGE variable=buffer_likelihood type=ram_2p impl=bram
 
-#pragma HLS ARRAY_PARTITION variable=buffer_objxy cyclic factor=4 dim=1
-#pragma HLS ARRAY_PARTITION variable=buffer_X cyclic factor=4 dim=1
-#pragma HLS ARRAY_PARTITION variable=buffer_Y cyclic factor=4 dim=1
-#pragma HLS ARRAY_PARTITION variable=buffer_likelihood cyclic factor=4 dim=1
+#pragma HLS ARRAY_PARTITION variable=buffer_obj_offsets complete dim=1
+#pragma HLS ARRAY_PARTITION variable=buffer_X cyclic factor=8 dim=1
+#pragma HLS ARRAY_PARTITION variable=buffer_Y cyclic factor=8 dim=1
+#pragma HLS ARRAY_PARTITION variable=buffer_likelihood cyclic factor=8 dim=1
 
- load_objxy(objxy, buffer_objxy, countOnes);
+ load_objxy(objxy, buffer_obj_offsets, countOnes, IszY, Nfr);
 
-
- Particle_loop:
-  for (int base = 0; base < Nparticles; base += 64) {
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_TRIPCOUNT min=32 max=32
+Particle_loop:
+    for (int base = 0; base < Nparticles; base += 64) {
+#pragma HLS LOOP_TRIPCOUNT min=1 max=32
+#pragma HLS LOOP_FLATTEN off
  int tileSize = 64;
 
-   if (base + 64 > Nparticles) {
-    tileSize = Nparticles - base;
-   }
+        if (base + 64 > Nparticles) {
+            tileSize = Nparticles - base;
+        }
 
-  load_particles(arrayX, arrayY, buffer_X, buffer_Y, base, tileSize);
-
-  compute_likelihood(buffer_X, buffer_Y, buffer_objxy, countOnes, IszY, Nfr, k, max_size, I, buffer_likelihood, tileSize);
-
-  store_likelihood(likelihood, buffer_likelihood, base, tileSize);
-  }
- }
+        load_particles(arrayX, arrayY, buffer_X, buffer_Y, base, tileSize);
+        compute_likelihood(buffer_X, buffer_Y, buffer_obj_offsets, countOnes, IszY, Nfr, k,
+                           max_size, I, buffer_likelihood, tileSize);
+        store_likelihood(likelihood, buffer_likelihood, base, tileSize);
+    }
+}
 }

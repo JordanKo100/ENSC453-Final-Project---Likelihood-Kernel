@@ -1,5 +1,4 @@
 obj/likelihood_kernel.o: ../../../../likelihood_kernel.cpp \
- ../../../../likelihood_kernel.h \
  /mnt/share/tools/Xilinx/Vitis_HLS/2020.2/include/ap_int.h \
  /mnt/share/tools/Xilinx/Vitis_HLS/2020.2/include/ap_common.h \
  /mnt/share/tools/Xilinx/Vitis_HLS/2020.2/include/ap_decl.h \
@@ -20,4 +19,5 @@ obj/likelihood_kernel.o: ../../../../likelihood_kernel.cpp \
  /mnt/share/tools/Xilinx/Vitis_HLS/2020.2/include/ap_fixed.h \
  /mnt/share/tools/Xilinx/Vitis_HLS/2020.2/include/ap_fixed_base.h \
  /mnt/share/tools/Xilinx/Vitis_HLS/2020.2/include/ap_fixed_ref.h \
- /mnt/share/tools/Xilinx/Vitis_HLS/2020.2/include/ap_fixed_special.h
+ /mnt/share/tools/Xilinx/Vitis_HLS/2020.2/include/ap_fixed_special.h \
+ ../../../../likelihood_kernel.h

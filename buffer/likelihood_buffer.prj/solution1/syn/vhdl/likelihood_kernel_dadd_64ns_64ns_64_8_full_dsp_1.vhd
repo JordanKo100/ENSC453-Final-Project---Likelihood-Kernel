@@ -7,7 +7,7 @@ use ieee.std_logic_1164.all;
 
 entity likelihood_kernel_dadd_64ns_64ns_64_8_full_dsp_1 is
     generic (
-        ID         : integer := 2;
+        ID         : integer := 1;
         NUM_STAGE  : integer := 8;
         din0_WIDTH : integer := 64;
         din1_WIDTH : integer := 64;

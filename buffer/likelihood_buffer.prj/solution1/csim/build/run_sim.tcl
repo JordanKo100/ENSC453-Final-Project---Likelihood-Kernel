@@ -6,7 +6,6 @@ set ::env(LD_LIBRARY_PATH) $::env(LD_LIBRARY_PATH):/mnt/share/tools/Xilinx/Vitis
 set ::env(LD_LIBRARY_PATH) $::env(LD_LIBRARY_PATH):/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/lnx64/tools/fft_v9_1
 set ::env(LD_LIBRARY_PATH) $::env(LD_LIBRARY_PATH):/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/lnx64/tools/fir_v7_0
 set ::env(LD_LIBRARY_PATH) $::env(LD_LIBRARY_PATH):/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/lnx64/tools/dds_v6_0
-set ::env(LD_LIBRARY_PATH) $::env(LD_LIBRARY_PATH):/usr/lib/x86_64-linux-gnu
 set ::env(LD_LIBRARY_PATH) $::env(LD_LIBRARY_PATH):/mnt/share/tools/Xilinx/Vitis_HLS/2020.2/lnx64/csim
 ### C sim ###
 if {![file exists csim.exe]} {

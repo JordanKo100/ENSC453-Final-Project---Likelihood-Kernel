@@ -5,9 +5,9 @@
 `timescale 1 ns / 1 ps
 module likelihood_kernel_buffer_objxy_ram (addr0, ce0, d0, we0, q0, addr1, ce1, q1,  clk);
 
-parameter DWIDTH = 64;
-parameter AWIDTH = 10;
-parameter MEM_SIZE = 800;
+parameter DWIDTH = 32;
+parameter AWIDTH = 8;
+parameter MEM_SIZE = 160;
 
 input[AWIDTH-1:0] addr0;
 input ce0;
@@ -56,9 +56,9 @@ module likelihood_kernel_buffer_objxy(
     ce1,
     q1);
 
-parameter DataWidth = 32'd64;
-parameter AddressRange = 32'd800;
-parameter AddressWidth = 32'd10;
+parameter DataWidth = 32'd32;
+parameter AddressRange = 32'd160;
+parameter AddressWidth = 32'd8;
 input reset;
 input clk;
 input[AddressWidth - 1:0] address0;

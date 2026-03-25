@@ -1,7 +1,7 @@
 <profile>
 
 <section name = "Vitis HLS Report for 'likelihood_kernel'" level="0">
-<item name = "Date">Sun Mar 22 20:49:48 2026
+<item name = "Date">Tue Mar 24 15:13:18 2026
 </item>
 <item name = "Version">2020.2 (Build 3064766 on Wed Nov 18 09:12:47 MST 2020)</item>
 <item name = "Project">likelihood_memopt.prj</item>
@@ -24,7 +24,7 @@
 <section name = "" level="1">
 <item name = "Summary"><table name="" hasTotal="0">
 <keys size="8">, min, max, min, max, min, max, Type</keys>
-<column name="">?, ?, ?, ?, ?, ?, none</column>
+<column name="">8079, 273242, 26.903 us, 0.910 ms, 8080, 273243, none</column>
 </table>
 </item>
 <item name = "Detail">
@@ -35,12 +35,8 @@
 </item>
 <item name = "Loop"><table name="" hasTotal="0">
 <keys size="8">Loop Name, min, max, Latency, achieved, target, Count, Pipelined</keys>
-<column name="- loadObjxy">168, 168, 10, 1, 1, 160, yes</column>
-<column name="- Particle_loop">?, ?, ?, -, -, 32, no</column>
-<column name=" + computeParticles">12288, 12928, 192 ~ 202, -, -, 64, no</column>
-<column name="  ++ accumulatePoints">147, 157, 79, 1, 1, 70 ~ 80, yes</column>
-<column name=" + storeLikelihoodWide">9, 9, 3, 1, 1, 8, yes</column>
-<column name=" + storeLikelihoodRemainder">?, ?, 9, 1, 1, ?, yes</column>
+<column name="- loadObjxy">183, 183, 26, 2, 1, 80, yes</column>
+<column name="- Particle_loop">7893, 273056, 7893 ~ 8533, -, -, 1 ~ 32, no</column>
 </table>
 </item>
 </section>

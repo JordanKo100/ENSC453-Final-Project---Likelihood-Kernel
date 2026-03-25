@@ -261,7 +261,7 @@
     "Uncertainty": "0.8991",
     "IsCombinational": "0",
     "II": "x",
-    "Latency": "undef"
+    "Latency": "8079"
   },
   "Xdc": {"OocClocks": ["create_clock -name ap_clk -period 3.330 [get_ports ap_clk]"]},
   "Ipx": {
@@ -282,41 +282,43 @@
       "..\/..\/likelihood_kernel.cpp"
     ],
     "Vhdl": [
-      "impl\/vhdl\/likelihood_kernel_buffer_likelihood_0.vhd",
-      "impl\/vhdl\/likelihood_kernel_buffer_objxy_0.vhd",
+      "impl\/vhdl\/likelihood_kernel_buffer_obj_offsets.vhd",
       "impl\/vhdl\/likelihood_kernel_buffer_X_0.vhd",
+      "impl\/vhdl\/likelihood_kernel_compute_likelihood.vhd",
       "impl\/vhdl\/likelihood_kernel_control_s_axi.vhd",
-      "impl\/vhdl\/likelihood_kernel_dacc_64ns_64ns_1ns_64_5_no_dsp_1.vhd",
       "impl\/vhdl\/likelihood_kernel_dadd_64ns_64ns_64_8_full_dsp_1.vhd",
       "impl\/vhdl\/likelihood_kernel_ddiv_64ns_64ns_64_31_no_dsp_1.vhd",
-      "impl\/vhdl\/likelihood_kernel_dsub_64ns_64ns_64_8_full_dsp_1.vhd",
+      "impl\/vhdl\/likelihood_kernel_dmul_64ns_64ns_64_8_max_dsp_1.vhd",
       "impl\/vhdl\/likelihood_kernel_gmem0_m_axi.vhd",
       "impl\/vhdl\/likelihood_kernel_gmem1_m_axi.vhd",
       "impl\/vhdl\/likelihood_kernel_gmem2_m_axi.vhd",
       "impl\/vhdl\/likelihood_kernel_gmem3_m_axi.vhd",
       "impl\/vhdl\/likelihood_kernel_gmem4_m_axi.vhd",
+      "impl\/vhdl\/likelihood_kernel_load_particles.vhd",
       "impl\/vhdl\/likelihood_kernel_mul_32s_32s_32_2_1.vhd",
-      "impl\/vhdl\/likelihood_kernel_mux_464_64_1_1.vhd",
+      "impl\/vhdl\/likelihood_kernel_mux_864_64_1_1.vhd",
       "impl\/vhdl\/likelihood_kernel_sitodp_32ns_64_5_no_dsp_1.vhd",
+      "impl\/vhdl\/likelihood_kernel_store_likelihood.vhd",
       "impl\/vhdl\/likelihood_kernel.vhd"
     ],
     "Verilog": [
-      "impl\/verilog\/likelihood_kernel_buffer_likelihood_0.v",
-      "impl\/verilog\/likelihood_kernel_buffer_objxy_0.v",
+      "impl\/verilog\/likelihood_kernel_buffer_obj_offsets.v",
       "impl\/verilog\/likelihood_kernel_buffer_X_0.v",
+      "impl\/verilog\/likelihood_kernel_compute_likelihood.v",
       "impl\/verilog\/likelihood_kernel_control_s_axi.v",
-      "impl\/verilog\/likelihood_kernel_dacc_64ns_64ns_1ns_64_5_no_dsp_1.v",
       "impl\/verilog\/likelihood_kernel_dadd_64ns_64ns_64_8_full_dsp_1.v",
       "impl\/verilog\/likelihood_kernel_ddiv_64ns_64ns_64_31_no_dsp_1.v",
-      "impl\/verilog\/likelihood_kernel_dsub_64ns_64ns_64_8_full_dsp_1.v",
+      "impl\/verilog\/likelihood_kernel_dmul_64ns_64ns_64_8_max_dsp_1.v",
       "impl\/verilog\/likelihood_kernel_gmem0_m_axi.v",
       "impl\/verilog\/likelihood_kernel_gmem1_m_axi.v",
       "impl\/verilog\/likelihood_kernel_gmem2_m_axi.v",
       "impl\/verilog\/likelihood_kernel_gmem3_m_axi.v",
       "impl\/verilog\/likelihood_kernel_gmem4_m_axi.v",
+      "impl\/verilog\/likelihood_kernel_load_particles.v",
       "impl\/verilog\/likelihood_kernel_mul_32s_32s_32_2_1.v",
-      "impl\/verilog\/likelihood_kernel_mux_464_64_1_1.v",
+      "impl\/verilog\/likelihood_kernel_mux_864_64_1_1.v",
       "impl\/verilog\/likelihood_kernel_sitodp_32ns_64_5_no_dsp_1.v",
+      "impl\/verilog\/likelihood_kernel_store_likelihood.v",
       "impl\/verilog\/likelihood_kernel.v"
     ],
     "SwDriver": [
@@ -331,25 +333,19 @@
     ],
     "IpMisc": ["impl\/misc\/logo.png"],
     "Subcore": [
-      "impl\/misc\/DAcc_ip.tcl",
       "impl\/misc\/likelihood_kernel_ap_dadd_6_full_dsp_64_ip.tcl",
       "impl\/misc\/likelihood_kernel_ap_ddiv_29_no_dsp_64_ip.tcl",
-      "impl\/misc\/likelihood_kernel_ap_dsub_6_full_dsp_64_ip.tcl",
+      "impl\/misc\/likelihood_kernel_ap_dmul_6_max_dsp_64_ip.tcl",
       "impl\/misc\/likelihood_kernel_ap_sitodp_3_no_dsp_32_ip.tcl"
     ],
     "DesignXml": ".autopilot\/db\/likelihood_kernel.design.xml",
     "DebugDir": ".debug",
-    "ProtoInst": ["\/local-scratch\/localhome\/rkk10\/Downloads\/proj_7\/proj_7\/mem-opt\/likelihood_memopt.prj\/solution1\/.debug\/likelihood_kernel.protoinst"]
+    "ProtoInst": ["\/local-scratch\/localhome\/mca307\/453\/proj_7\/mem-opt\/likelihood_memopt.prj\/solution1\/.debug\/likelihood_kernel.protoinst"]
   },
   "SubcoreInfo": {
     "HasXpmMemory": false,
     "HasClockedDsp": false,
     "Ip": [
-      {
-        "Name": "DAcc",
-        "Vlnv": "xilinx.com:ip:floating_point:7.1",
-        "Params": "CONFIG.Add_Sub_Value Add CONFIG.Has_ACLKEN true CONFIG.Has_ARESETN true CONFIG.Operation_Type Accumulator CONFIG.C_Optimization Low_Latency CONFIG.Flow_Control NonBlocking CONFIG.Maximum_Latency false CONFIG.A_Precision_Type Double CONFIG.C_A_Exponent_Width 11 CONFIG.C_A_Fraction_Width 53 CONFIG.Result_Precision_Type Double CONFIG.C_Result_Exponent_Width 11 CONFIG.C_Result_Fraction_Width 53 CONFIG.C_Mult_Usage No_Usage CONFIG.Has_RESULT_TREADY false CONFIG.C_Latency 4 CONFIG.C_Rate 1 CONFIG.Has_A_TLAST true CONFIG.RESULT_TLAST_Behv Pass_A_TLAST"
-      },
       {
         "Name": "likelihood_kernel_ap_dadd_6_full_dsp_64",
         "Vlnv": "xilinx.com:ip:floating_point:7.1",
@@ -361,9 +357,9 @@
         "Params": "CONFIG.a_precision_type Double CONFIG.a_tuser_width 1 CONFIG.add_sub_value Both CONFIG.b_tuser_width 1 CONFIG.c_a_exponent_width 11 CONFIG.c_a_fraction_width 53 CONFIG.c_compare_operation Programmable CONFIG.c_has_divide_by_zero false CONFIG.c_has_invalid_op false CONFIG.c_has_overflow false CONFIG.c_has_underflow false CONFIG.c_latency 29 CONFIG.c_mult_usage No_Usage CONFIG.c_optimization Speed_Optimized CONFIG.c_rate 1 CONFIG.c_result_exponent_width 11 CONFIG.c_result_fraction_width 53 CONFIG.component_name likelihood_kernel_ap_ddiv_29_no_dsp_64 CONFIG.flow_control NonBlocking CONFIG.has_a_tlast false CONFIG.has_a_tuser false CONFIG.has_aclken true CONFIG.has_aresetn false CONFIG.has_b_tlast false CONFIG.has_b_tuser false CONFIG.has_operation_tlast false CONFIG.has_operation_tuser false CONFIG.has_result_tready false CONFIG.maximum_latency false CONFIG.operation_tuser_width 1 CONFIG.operation_type Divide CONFIG.result_precision_type Double CONFIG.result_tlast_behv Null"
       },
       {
-        "Name": "likelihood_kernel_ap_dsub_6_full_dsp_64",
+        "Name": "likelihood_kernel_ap_dmul_6_max_dsp_64",
         "Vlnv": "xilinx.com:ip:floating_point:7.1",
-        "Params": "CONFIG.a_precision_type Double CONFIG.a_tuser_width 1 CONFIG.add_sub_value Subtract CONFIG.b_tuser_width 1 CONFIG.c_a_exponent_width 11 CONFIG.c_a_fraction_width 53 CONFIG.c_compare_operation Programmable CONFIG.c_has_divide_by_zero false CONFIG.c_has_invalid_op false CONFIG.c_has_overflow false CONFIG.c_has_underflow false CONFIG.c_latency 6 CONFIG.c_mult_usage Full_Usage CONFIG.c_optimization Speed_Optimized CONFIG.c_rate 1 CONFIG.c_result_exponent_width 11 CONFIG.c_result_fraction_width 53 CONFIG.component_name likelihood_kernel_ap_dsub_6_full_dsp_64 CONFIG.flow_control NonBlocking CONFIG.has_a_tlast false CONFIG.has_a_tuser false CONFIG.has_aclken true CONFIG.has_aresetn false CONFIG.has_b_tlast false CONFIG.has_b_tuser false CONFIG.has_operation_tlast false CONFIG.has_operation_tuser false CONFIG.has_result_tready false CONFIG.maximum_latency false CONFIG.operation_tuser_width 1 CONFIG.operation_type Add_Subtract CONFIG.result_precision_type Double CONFIG.result_tlast_behv Null"
+        "Params": "CONFIG.a_precision_type Double CONFIG.a_tuser_width 1 CONFIG.add_sub_value Both CONFIG.b_tuser_width 1 CONFIG.c_a_exponent_width 11 CONFIG.c_a_fraction_width 53 CONFIG.c_compare_operation Programmable CONFIG.c_has_divide_by_zero false CONFIG.c_has_invalid_op false CONFIG.c_has_overflow false CONFIG.c_has_underflow false CONFIG.c_latency 6 CONFIG.c_mult_usage Max_Usage CONFIG.c_optimization Speed_Optimized CONFIG.c_rate 1 CONFIG.c_result_exponent_width 11 CONFIG.c_result_fraction_width 53 CONFIG.component_name likelihood_kernel_ap_dmul_6_max_dsp_64 CONFIG.flow_control NonBlocking CONFIG.has_a_tlast false CONFIG.has_a_tuser false CONFIG.has_aclken true CONFIG.has_aresetn false CONFIG.has_b_tlast false CONFIG.has_b_tuser false CONFIG.has_operation_tlast false CONFIG.has_operation_tuser false CONFIG.has_result_tready false CONFIG.maximum_latency false CONFIG.operation_tuser_width 1 CONFIG.operation_type Multiply CONFIG.result_precision_type Double CONFIG.result_tlast_behv Null"
       },
       {
         "Name": "likelihood_kernel_ap_sitodp_3_no_dsp_32",
@@ -2355,20 +2351,194 @@
     }
   },
   "ModuleInfo": {
-    "Hierarchy": {"ModuleName": "likelihood_kernel"},
-    "Info": {"likelihood_kernel": {
+    "Hierarchy": {
+      "ModuleName": "likelihood_kernel",
+      "Instances": [
+        {
+          "ModuleName": "compute_likelihood",
+          "InstanceName": "grp_compute_likelihood_fu_420"
+        },
+        {
+          "ModuleName": "load_particles",
+          "InstanceName": "grp_load_particles_fu_458"
+        },
+        {
+          "ModuleName": "store_likelihood",
+          "InstanceName": "grp_store_likelihood_fu_487"
+        }
+      ]
+    },
+    "Info": {
+      "load_particles": {
         "FunctionProtocol": "ap_ctrl_hs",
         "isTaskLevelControl": "0",
         "isPipelined": "0",
         "isCombinational": "0",
         "isOneStateSeq": "0"
-      }},
-    "Metrics": {"likelihood_kernel": {
+      },
+      "compute_likelihood": {
+        "FunctionProtocol": "ap_ctrl_hs",
+        "isTaskLevelControl": "0",
+        "isPipelined": "0",
+        "isCombinational": "0",
+        "isOneStateSeq": "0"
+      },
+      "store_likelihood": {
+        "FunctionProtocol": "ap_ctrl_hs",
+        "isTaskLevelControl": "0",
+        "isPipelined": "0",
+        "isCombinational": "0",
+        "isOneStateSeq": "0"
+      },
+      "likelihood_kernel": {
+        "FunctionProtocol": "ap_ctrl_hs",
+        "isTaskLevelControl": "0",
+        "isPipelined": "0",
+        "isCombinational": "0",
+        "isOneStateSeq": "0"
+      }
+    },
+    "Metrics": {
+      "load_particles": {
         "Latency": {
-          "LatencyBest": "",
-          "LatencyAvg": "",
-          "LatencyWorst": "",
-          "PipelineII": "",
+          "LatencyBest": "18",
+          "LatencyAvg": "18",
+          "LatencyWorst": "18",
+          "PipelineII": "18",
+          "PipelineDepth": "",
+          "PipelineType": "none"
+        },
+        "Timing": {
+          "Target": "3.33",
+          "Uncertainty": "0.90",
+          "Estimate": "2.431"
+        },
+        "Loops": [{
+            "Name": "loadParticlesWide",
+            "TripCount": "8",
+            "Latency": "16",
+            "PipelineII": "1",
+            "PipelineDepth": "10"
+          }],
+        "Area": {
+          "FF": "15760",
+          "AVAIL_FF": "1743360",
+          "UTIL_FF": "~0",
+          "LUT": "1427",
+          "AVAIL_LUT": "871680",
+          "UTIL_LUT": "~0",
+          "BRAM_18K": "0",
+          "AVAIL_BRAM": "2688",
+          "UTIL_BRAM": "0",
+          "DSP": "0",
+          "AVAIL_DSP": "5952",
+          "UTIL_DSP": "0",
+          "URAM": "0",
+          "AVAIL_URAM": "640",
+          "UTIL_URAM": "0"
+        }
+      },
+      "compute_likelihood": {
+        "Latency": {
+          "LatencyBest": "7852",
+          "LatencyAvg": "8172",
+          "LatencyWorst": "8492",
+          "PipelineIIMin": "7852",
+          "PipelineIIMax": "8492",
+          "PipelineII": "7852 ~ 8492",
+          "PipelineDepth": "",
+          "PipelineType": "none"
+        },
+        "Timing": {
+          "Target": "3.33",
+          "Uncertainty": "0.90",
+          "Estimate": "2.431"
+        },
+        "Loops": [{
+            "Name": "computeParticles",
+            "TripCount": "64",
+            "LatencyMin": "7808",
+            "LatencyMax": "8448",
+            "Latency": "7808 ~ 8448",
+            "PipelineII": "",
+            "PipelineDepthMin": "122",
+            "PipelineDepthMax": "132",
+            "PipelineDepth": "122 ~ 132",
+            "Loops": [{
+                "Name": "accumulatePoints",
+                "TripCount": "",
+                "LatencyMin": "81",
+                "LatencyMax": "91",
+                "Latency": "81 ~ 91",
+                "PipelineII": "1",
+                "PipelineDepth": "13"
+              }]
+          }],
+        "Area": {
+          "DSP": "8",
+          "AVAIL_DSP": "5952",
+          "UTIL_DSP": "~0",
+          "FF": "1609",
+          "AVAIL_FF": "1743360",
+          "UTIL_FF": "~0",
+          "LUT": "3453",
+          "AVAIL_LUT": "871680",
+          "UTIL_LUT": "~0",
+          "BRAM_18K": "0",
+          "AVAIL_BRAM": "2688",
+          "UTIL_BRAM": "0",
+          "URAM": "0",
+          "AVAIL_URAM": "640",
+          "UTIL_URAM": "0"
+        }
+      },
+      "store_likelihood": {
+        "Latency": {
+          "LatencyBest": "16",
+          "LatencyAvg": "16",
+          "LatencyWorst": "16",
+          "PipelineII": "16",
+          "PipelineDepth": "",
+          "PipelineType": "none"
+        },
+        "Timing": {
+          "Target": "3.33",
+          "Uncertainty": "0.90",
+          "Estimate": "2.431"
+        },
+        "Loops": [{
+            "Name": "storeLikelihoodWide",
+            "TripCount": "8",
+            "Latency": "14",
+            "PipelineII": "1",
+            "PipelineDepth": "8"
+          }],
+        "Area": {
+          "FF": "715",
+          "AVAIL_FF": "1743360",
+          "UTIL_FF": "~0",
+          "LUT": "1218",
+          "AVAIL_LUT": "871680",
+          "UTIL_LUT": "~0",
+          "BRAM_18K": "0",
+          "AVAIL_BRAM": "2688",
+          "UTIL_BRAM": "0",
+          "DSP": "0",
+          "AVAIL_DSP": "5952",
+          "UTIL_DSP": "0",
+          "URAM": "0",
+          "AVAIL_URAM": "640",
+          "UTIL_URAM": "0"
+        }
+      },
+      "likelihood_kernel": {
+        "Latency": {
+          "LatencyBest": "8079",
+          "LatencyAvg": "131594",
+          "LatencyWorst": "273242",
+          "PipelineIIMin": "8080",
+          "PipelineIIMax": "273243",
+          "PipelineII": "8080 ~ 273243",
           "PipelineDepth": "",
           "PipelineType": "none"
         },
@@ -2380,78 +2550,47 @@
         "Loops": [
           {
             "Name": "loadObjxy",
-            "TripCount": "160",
-            "Latency": "168",
-            "PipelineII": "1",
-            "PipelineDepth": "10"
+            "TripCount": "80",
+            "Latency": "183",
+            "PipelineII": "2",
+            "PipelineDepth": "26"
           },
           {
             "Name": "Particle_loop",
-            "TripCount": "32",
-            "Latency": "",
+            "TripCount": "",
+            "LatencyMin": "7893",
+            "LatencyMax": "273056",
+            "Latency": "7893 ~ 273056",
             "PipelineII": "",
-            "PipelineDepth": "",
-            "Loops": [
-              {
-                "Name": "computeParticles",
-                "TripCount": "64",
-                "LatencyMin": "12288",
-                "LatencyMax": "12928",
-                "Latency": "12288 ~ 12928",
-                "PipelineII": "",
-                "PipelineDepthMin": "192",
-                "PipelineDepthMax": "202",
-                "PipelineDepth": "192 ~ 202",
-                "Loops": [{
-                    "Name": "accumulatePoints",
-                    "TripCount": "",
-                    "LatencyMin": "147",
-                    "LatencyMax": "157",
-                    "Latency": "147 ~ 157",
-                    "PipelineII": "1",
-                    "PipelineDepth": "79"
-                  }]
-              },
-              {
-                "Name": "storeLikelihoodWide",
-                "TripCount": "8",
-                "Latency": "9",
-                "PipelineII": "1",
-                "PipelineDepth": "3"
-              },
-              {
-                "Name": "storeLikelihoodRemainder",
-                "TripCount": "",
-                "Latency": "",
-                "PipelineII": "1",
-                "PipelineDepth": "9"
-              }
-            ]
+            "PipelineDepthMin": "7893",
+            "PipelineDepthMax": "8533",
+            "PipelineDepth": "7893 ~ 8533"
           }
         ],
         "Area": {
-          "BRAM_18K": "128",
+          "BRAM_18K": "145",
           "AVAIL_BRAM": "2688",
-          "UTIL_BRAM": "4",
-          "DSP": "9",
+          "UTIL_BRAM": "5",
+          "DSP": "11",
           "AVAIL_DSP": "5952",
           "UTIL_DSP": "~0",
-          "FF": "23065",
+          "FF": "26479",
           "AVAIL_FF": "1743360",
           "UTIL_FF": "1",
-          "LUT": "24519",
+          "LUT": "17745",
           "AVAIL_LUT": "871680",
           "UTIL_LUT": "2",
           "URAM": "0",
           "AVAIL_URAM": "640",
           "UTIL_URAM": "0"
         }
-      }}
+      }
+    }
   },
   "GenerateBdFiles": "0",
   "GenData": {
     "DataVersion": "0.2",
-    "Time": "2026-03-22 20:49:54 PDT",
+    "Time": "2026-03-24 15:13:21 PDT",
     "ToolName": "vivado_hls",
     "ToolVersion": "2020.2"
   }

@@ -7,7 +7,7 @@
 
 module likelihood_kernel_sitodp_32ns_64_5_no_dsp_1
 #(parameter
-    ID         = 5,
+    ID         = 26,
     NUM_STAGE  = 5,
     din0_WIDTH = 32,
     dout_WIDTH = 64
