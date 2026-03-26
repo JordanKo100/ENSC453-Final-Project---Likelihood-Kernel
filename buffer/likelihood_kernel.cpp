@@ -74,7 +74,6 @@ void compute_likelihood(const double buffer_X[N_BUFFER_SIZE],
 			int pixel_sum = 0;
 		computeIndices:
 			for (int y = 0; y < countOnes; y++) {
-#pragma HLS PIPELINE II=1
 #pragma HLS LOOP_TRIPCOUNT min=70 max=80
 				int offY = buffer_objxy[y * 2];
 				int offX = buffer_objxy[y * 2 + 1];
@@ -90,7 +89,6 @@ void compute_likelihood(const double buffer_X[N_BUFFER_SIZE],
 			}
 	    		accumuLikelihood:
 	        		for (int y = 0; y < countOnes; y++) {
-#pragma HLS PIPELINE II=1
 #pragma HLS LOOP_TRIPCOUNT min=70 max=80
 				pixel_sum += I[ind_buffer[y]];
         		}
