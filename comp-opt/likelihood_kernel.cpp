@@ -21,33 +21,34 @@ inline long absLong(long value) {
 }
 
 void load_objxy(const double* objxy,
-                int buffer_objxy[MAX_COUNT_ONES * 2],
-                int countOnes) {
-#pragma HLS INLINE
+		int buffer_objxy[MAX_COUNT_ONES * 2], 
+		int countOnes){
 
-loadObjxy:
-    for (int i = 0; i < countOnes * 2; i++) {
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_TRIPCOUNT min=1 max=160
-        buffer_objxy[i] = roundDouble(objxy[i]);
-    }
+	#pragma HLS INLINE off
+	loadObjxy: for (int i = 0; i < countOnes * 2; i++) {
+		#pragma HLS PIPELINE II=1
+		#pragma HLS LOOP_TRIPCOUNT min=140 max=160
+
+		buffer_objxy[i] = roundDouble(objxy[i]);
+	}
 }
 
-void load_particles(const double* arrayX,
-                    const double* arrayY,
-                    double buffer_X[N_BUFFER_SIZE],
-                    double buffer_Y[N_BUFFER_SIZE],
-                    int base,
-                    int tileSize) {
-#pragma HLS INLINE
+void load_particles(const double* arrayX, 
+		    const double* arrayY, 
+		    double buffer_X[N_BUFFER_SIZE], 
+		    double buffer_Y[N_BUFFER_SIZE],
+		    int base,
+		    int tileSize){
 
-loadParticles:
-    for (int x = 0; x < tileSize; x++) {
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_TRIPCOUNT min=1 max=64
-        buffer_X[x] = arrayX[base + x];
-        buffer_Y[x] = arrayY[base + x];
-    }
+	#pragma HLS INLINE off
+	loadParticles: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+		#pragma HLS PIPELINE II=1
+
+		if (x < tileSize){
+			buffer_X[x] = arrayX[base + x];
+			buffer_Y[x] = arrayY[base + x];
+		}
+	}
 }
 
 void load_pixels(const double buffer_X[N_BUFFER_SIZE],
@@ -61,24 +62,22 @@ void load_pixels(const double buffer_X[N_BUFFER_SIZE],
                  const int* I,
                  int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
                  int tileSize) {
-#pragma HLS INLINE
+	#pragma HLS INLINE off
 
-loadPixels:
-    for (int x = 0; x < tileSize; x++) {
-#pragma HLS LOOP_TRIPCOUNT min=1 max=64
-        const int px = roundDouble(buffer_X[x]);
-        const int py = roundDouble(buffer_Y[x]);
+	loadPixels: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+		if (x < tileSize){
+			const int px = roundDouble(buffer_X[x]);
+			const int py = roundDouble(buffer_Y[x]);
 
-    loadParticlePixels:
-        for (int y = 0; y < countOnes; y++) {
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_TRIPCOUNT min=1 max=80
-            const int offY = buffer_objxy[y * 2];
-            const int offX = buffer_objxy[y * 2 + 1];
-            const int indX = px + offX;
-            const int indY = py + offY;
-            long idx = absLong((long)indX * (long)IszY * (long)Nfr +
-                               (long)indY * (long)Nfr + (long)k);
+			loadParticlePixels: for (int y = 0; y < countOnes; y++) {
+				#pragma HLS PIPELINE II=1
+				#pragma HLS LOOP_TRIPCOUNT min=70 max=80
+				const int offY = buffer_objxy[y * 2];
+				const int offX = buffer_objxy[y * 2 + 1];
+				const int indX = px + offX;
+				const int indY = py + offY;
+				long idx = absLong((long)indX * (long)IszY * (long)Nfr +
+				(long)indY * (long)Nfr + (long)k);
 
             if (idx >= max_size) {
                 idx = 0;
@@ -139,17 +138,18 @@ computeParticles:
 }
 
 void store_likelihood(double* likelihood,
-                      const double buffer_likelihood[N_BUFFER_SIZE],
-                      int base,
-                      int tileSize) {
-#pragma HLS INLINE
+		      const double buffer_likelihood[N_BUFFER_SIZE],
+		      int base,
+		      int tileSize) {
 
-storeLikelihood:
-    for (int x = 0; x < tileSize; x++) {
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_TRIPCOUNT min=1 max=64
-        likelihood[base + x] = buffer_likelihood[x];
-    }
+	#pragma HLS INLINE off
+	storeLikelihood: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+		#pragma HLS PIPELINE II=1
+		
+		if (x < tileSize){
+			likelihood[base + x] = buffer_likelihood[x];
+		}
+	}
 }
 
 extern "C" {

@@ -12,7 +12,7 @@ static const double kPixelDen = 50.0;
 
 // Helper to simulate the roundDouble functionality
 inline int roundDouble(double value) {
-    return static_cast<int>(value + ((value >= 0.0) ? 0.5 : -0.5));
+    return static_cast<int>(value + 0.5);
 }
 
 void load_objxy(const double* objxy,
@@ -36,40 +36,44 @@ void load_particles(const double* arrayX,
 		    int base,
 		    int tileSize){
 
-#pragma HLS INLINE
-	loadParticles:
-			for (int x = 0; x < tileSize; x++) {
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_TRIPCOUNT min=64 max=64
-	        		buffer_X[x] = arrayX[base + x];
-	        		buffer_Y[x] = arrayY[base + x];
-	    		}
+	#pragma HLS INLINE
+	loadParticles: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+		#pragma HLS PIPELINE II=1
 
+		if (x < tileSize){
+			buffer_X[x] = arrayX[base + x];
+			buffer_Y[x] = arrayY[base + x];
+		}
+	}
 }
 
 
-void load_pixels(const double buffer_X[N_BUFFER_SIZE],
-		 const double buffer_Y[N_BUFFER_SIZE],
+void compute_likelihood(const double buffer_X[N_BUFFER_SIZE], 
+			const double buffer_Y[N_BUFFER_SIZE], 
 			const int buffer_objxy[MAX_COUNT_ONES * 2],
 			int countOnes,
 			int IszY,
 			int Nfr,
 			int k,
 			long max_size,
-			const int* I,
-			int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
+			const int* I, 
+			double buffer_likelihood[N_BUFFER_SIZE],
 			int tileSize){
 
 #pragma HLS INLINE
-	loadPixels:
-		for (int x = 0; x < tileSize; x++) {
+	const double inv_count = 1.0 / (double)countOnes;
+	const double scale = (kPixelScaleNum / kPixelDen) * inv_count;
+	const double bias = kPixelBiasNum / kPixelDen;
+	int ind_buffer[MAX_COUNT_ONES];
+
+		computeLikelihood:
+	    		for (int x = 0; x < tileSize; x++) {
 #pragma HLS LOOP_TRIPCOUNT min=64 max=64
 			int px = roundDouble(buffer_X[x]);
 			int py = roundDouble(buffer_Y[x]);
-
-		loadParticlePixels:
+			int pixel_sum = 0;
+		computeIndices:
 			for (int y = 0; y < countOnes; y++) {
-#pragma HLS PIPELINE II=1
 #pragma HLS LOOP_TRIPCOUNT min=70 max=80
 				int offY = buffer_objxy[y * 2];
 				int offX = buffer_objxy[y * 2 + 1];
@@ -81,35 +85,16 @@ void load_pixels(const double buffer_X[N_BUFFER_SIZE],
 					idx = 0;
 				}
 
-				buffer_pixels[x][y] = I[idx];
+				ind_buffer[y] = idx;
 			}
-		}
-}
-
-
-void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
-			int countOnes,
-			double buffer_likelihood[N_BUFFER_SIZE],
-			int tileSize){
-
-#pragma HLS INLINE
-	const double inv_count = 1.0 / (double)countOnes;
-	const double scale = (kPixelScaleNum / kPixelDen) * inv_count;
-	const double bias = kPixelBiasNum / kPixelDen;
-
-			computeLikelihood:
-		    	for (int x = 0; x < tileSize; x++) {
-#pragma HLS LOOP_TRIPCOUNT min=64 max=64
-				int pixel_sum = 0;
-		    	accumuLikelihood:
-		        	for (int y = 0; y < countOnes; y++) {
-#pragma HLS PIPELINE II=1
+	    		accumuLikelihood:
+	        		for (int y = 0; y < countOnes; y++) {
 #pragma HLS LOOP_TRIPCOUNT min=70 max=80
-				pixel_sum += buffer_pixels[x][y];
-	        	}
+				pixel_sum += I[ind_buffer[y]];
+        		}
 
-	        	buffer_likelihood[x] = scale * (double)pixel_sum - bias;
-	    		}
+        	buffer_likelihood[x] = scale * (double)pixel_sum - bias;
+    		}
 }
 
 
@@ -117,13 +102,15 @@ void store_likelihood(double* likelihood,
 		      const double buffer_likelihood[N_BUFFER_SIZE],
 		      int base,
 		      int tileSize) {
-#pragma HLS INLINE
-		storeLikelihood:
-	    		for (int x = 0; x < tileSize; x++) {
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_TRIPCOUNT min=64 max=64
-				likelihood[base + x] = buffer_likelihood[x];
-	    		}
+
+	#pragma HLS INLINE
+	storeLikelihood: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+		#pragma HLS PIPELINE II=1
+		
+		if (x < tileSize){
+			likelihood[base + x] = buffer_likelihood[x];
+		}
+	}
 }
 
 extern "C" {
@@ -158,15 +145,13 @@ void likelihood_kernel(int Nparticles,
 #pragma HLS INTERFACE s_axilite port=likelihood bundle=control
 #pragma HLS INTERFACE s_axilite port=return bundle=control
 
-		int buffer_objxy[MAX_COUNT_ONES * 2];
-		double buffer_X[N_BUFFER_SIZE];
-		double buffer_Y[N_BUFFER_SIZE];
-		int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES];
-		double buffer_likelihood[N_BUFFER_SIZE];
+	int buffer_objxy[MAX_COUNT_ONES * 2];
+	double buffer_X[N_BUFFER_SIZE];
+	double buffer_Y[N_BUFFER_SIZE];
+	double buffer_likelihood[N_BUFFER_SIZE];
 
 	load_objxy(objxy, buffer_objxy, countOnes);
 	
-
 		Particle_loop:
 			for (int base = 0; base < Nparticles; base += N_BUFFER_SIZE) {
 #pragma HLS LOOP_TRIPCOUNT min=1 max=32
@@ -177,13 +162,11 @@ void likelihood_kernel(int Nparticles,
 				tileSize = Nparticles - base;
 			}
 
-			load_particles(arrayX, arrayY, buffer_X, buffer_Y, base, tileSize);
+		load_particles(arrayX, arrayY, buffer_X, buffer_Y, base, tileSize);
 
-			load_pixels(buffer_X, buffer_Y, buffer_objxy, countOnes, IszY, Nfr, k, max_size, I, buffer_pixels, tileSize);
+		compute_likelihood(buffer_X, buffer_Y, buffer_objxy, countOnes, IszY, Nfr, k, max_size, I, buffer_likelihood, tileSize);
 
-			compute_likelihood(buffer_pixels, countOnes, buffer_likelihood, tileSize);
-
-			store_likelihood(likelihood, buffer_likelihood, base, tileSize);
-			}
+		store_likelihood(likelihood, buffer_likelihood, base, tileSize);
 		}
 	}
+}
