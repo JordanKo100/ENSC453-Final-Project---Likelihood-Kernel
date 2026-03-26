@@ -14,7 +14,7 @@
 #define TB_MAX_COUNTONES 80
 
 inline int tb_roundDouble(double value) {
-    return static_cast<int>(value + 0.5);
+    return static_cast<int>(value + ((value >= 0.0) ? 0.5 : -0.5));
 }
 
 int build_objxy_radius5(double* objxy) {

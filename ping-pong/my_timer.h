@@ -7,7 +7,7 @@
 
 typedef struct timespec timespec;
 timespec diff(timespec start, timespec end)
-{   
+{
   timespec temp;
   if ((end.tv_nsec-start.tv_nsec)<0) {
     temp.tv_sec = end.tv_sec-start.tv_sec-1;
