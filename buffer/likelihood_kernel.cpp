@@ -36,15 +36,15 @@ void load_particles(const double* arrayX,
 		    int base,
 		    int tileSize){
 
-#pragma HLS INLINE
-	loadParticles:
-			for (int x = 0; x < tileSize; x++) {
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_TRIPCOUNT min=64 max=64
-	        		buffer_X[x] = arrayX[base + x];
-	        		buffer_Y[x] = arrayY[base + x];
-	    		}
+	#pragma HLS INLINE
+	loadParticles: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+		#pragma HLS PIPELINE II=1
 
+		if (x < tileSize){
+			buffer_X[x] = arrayX[base + x];
+			buffer_Y[x] = arrayY[base + x];
+		}
+	}
 }
 
 
@@ -102,13 +102,15 @@ void store_likelihood(double* likelihood,
 		      const double buffer_likelihood[N_BUFFER_SIZE],
 		      int base,
 		      int tileSize) {
-#pragma HLS INLINE
-		storeLikelihood:
-	    		for (int x = 0; x < tileSize; x++) {
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_TRIPCOUNT min=64 max=64
-				likelihood[base + x] = buffer_likelihood[x];
-	    		}
+
+	#pragma HLS INLINE
+	storeLikelihood: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+		#pragma HLS PIPELINE II=1
+		
+		if (x < tileSize){
+			likelihood[base + x] = buffer_likelihood[x];
+		}
+	}
 }
 
 extern "C" {
