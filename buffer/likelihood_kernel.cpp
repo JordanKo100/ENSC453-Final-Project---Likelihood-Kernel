@@ -60,21 +60,20 @@ void compute_likelihood(const double buffer_X[N_BUFFER_SIZE],
 			double buffer_likelihood[N_BUFFER_SIZE],
 			int tileSize){
 
-#pragma HLS INLINE
+#pragma HLS INLINE off
 	const double inv_count = 1.0 / (double)countOnes;
 	const double scale = (kPixelScaleNum / kPixelDen) * inv_count;
 	const double bias = kPixelBiasNum / kPixelDen;
 	int ind_buffer[MAX_COUNT_ONES];
 
-		computeLikelihood:
-	    		for (int x = 0; x < tileSize; x++) {
-#pragma HLS LOOP_TRIPCOUNT min=64 max=64
+	computeLikelihood: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+		if (x < tileSize){
 			int px = roundDouble(buffer_X[x]);
 			int py = roundDouble(buffer_Y[x]);
 			int pixel_sum = 0;
-		computeIndices:
-			for (int y = 0; y < countOnes; y++) {
-#pragma HLS LOOP_TRIPCOUNT min=70 max=80
+			
+			computeIndices: for (int y = 0; y < countOnes; y++) {
+				#pragma HLS LOOP_TRIPCOUNT min=70 max=80
 				int offY = buffer_objxy[y * 2];
 				int offX = buffer_objxy[y * 2 + 1];
 				int indX = px + offX;
@@ -87,14 +86,15 @@ void compute_likelihood(const double buffer_X[N_BUFFER_SIZE],
 
 				ind_buffer[y] = idx;
 			}
-	    		accumuLikelihood:
-	        		for (int y = 0; y < countOnes; y++) {
-#pragma HLS LOOP_TRIPCOUNT min=70 max=80
-				pixel_sum += I[ind_buffer[y]];
-        		}
 
-        	buffer_likelihood[x] = scale * (double)pixel_sum - bias;
-    		}
+			accumuLikelihood: for (int y = 0; y < countOnes; y++) {
+				#pragma HLS LOOP_TRIPCOUNT min=70 max=80
+				pixel_sum += I[ind_buffer[y]];
+			}
+
+			buffer_likelihood[x] = scale * (double)pixel_sum - bias;
+		}
+	}
 }
 
 
