@@ -104,8 +104,6 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
 
     computeParticles: for (int x = 0; x < N_BUFFER_SIZE; x++) {
         if (x < tileSize){
-            #pragma HLS LOOP_TRIPCOUNT min=1 max=64
-
             int partial_sum[PIX_SUM_LANES];
             #pragma HLS ARRAY_PARTITION variable=partial_sum complete dim=1
 
