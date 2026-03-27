@@ -15,13 +15,20 @@ using likelihood_bench::BenchmarkConfig;
 using likelihood_bench::Dataset;
 // SECTION: Fixed settings
 // Edit only this block when you want a different benchmark setup.
-constexpr int kParticles = likelihood_bench::kDefaultParticles;
+// =========== changing input size
+// constexpr int kParticles = likelihood_bench::kDefaultParticles;
+// constexpr long kMaxSize = likelihood_bench::kDefaultMaxSize;
+// constexpr int kBlockSize = 256;
+// constexpr int kWarmupIters = 10;
+// constexpr int kTimedIters = 100;
+// constexpr bool kVerifyResult = true;
+constexpr int kParticles = 20000000;
 constexpr long kMaxSize = likelihood_bench::kDefaultMaxSize;
 constexpr int kBlockSize = 256;
 constexpr int kWarmupIters = 10;
 constexpr int kTimedIters = 100;
 constexpr bool kVerifyResult = true;
-
+//========================
 __constant__ int g_objOffsets[likelihood_bench::kMaxCountOnes];
 
 __device__ __forceinline__ int round_double_device(double value) {
@@ -72,7 +79,10 @@ void check_cuda(cudaError_t status, const char* what) {
 
 struct GpuRunResult {
     std::vector<double> likelihood;
-    double avgKernelMs = 0.0;
+    double avgKernelMs;
+
+    GpuRunResult(std::vector<double> likelihoodIn, double avgKernelMsIn)
+        : likelihood(std::move(likelihoodIn)), avgKernelMs(avgKernelMsIn) {}
 };
 
 GpuRunResult run_gpu_benchmark(const BenchmarkConfig& cfg, const Dataset& data) {
@@ -165,12 +175,12 @@ GpuRunResult run_gpu_benchmark(const BenchmarkConfig& cfg, const Dataset& data) 
     check_cuda(cudaFree(dImage), "cudaFree image");
     check_cuda(cudaFree(dLikelihood), "cudaFree likelihood");
 
-    return {std::move(likelihoodHost),
-            static_cast<double>(totalMs) / static_cast<double>(cfg.iters)};
+    return GpuRunResult(std::move(likelihoodHost),
+                        static_cast<double>(totalMs) / static_cast<double>(cfg.iters));
 }
 
 }  // namespace
-// SECTION: main
+// SECTION:
 int main() {
     try {
         BenchmarkConfig cfg;

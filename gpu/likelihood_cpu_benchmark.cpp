@@ -62,8 +62,15 @@ void run_likelihood_cpu(const BenchmarkConfig& cfg,
 
 struct CpuRunResult {
     std::vector<double> likelihood;
-    double avgKernelMs = 0.0;
-    double bestKernelMs = 0.0;
+    double avgKernelMs;
+    double bestKernelMs;
+
+    CpuRunResult(std::vector<double> likelihoodIn,
+                 double avgKernelMsIn,
+                 double bestKernelMsIn)
+        : likelihood(std::move(likelihoodIn)),
+          avgKernelMs(avgKernelMsIn),
+          bestKernelMs(bestKernelMsIn) {}
 };
 
 CpuRunResult run_cpu_benchmark(const BenchmarkConfig& cfg, const Dataset& data) {
@@ -85,7 +92,9 @@ CpuRunResult run_cpu_benchmark(const BenchmarkConfig& cfg, const Dataset& data) 
         bestMs = (iter == 0) ? elapsedMs : std::min(bestMs, elapsedMs);
     }
 
-    return {std::move(likelihood), totalMs / static_cast<double>(cfg.iters), bestMs};
+    return CpuRunResult(std::move(likelihood),
+                        totalMs / static_cast<double>(cfg.iters),
+                        bestMs);
 }
 
 }  // namespace
