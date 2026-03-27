@@ -12,7 +12,7 @@ static const double kPixelDen = 50.0;
 
 // Helper to simulate the roundDouble functionality
 inline int roundDouble(double value) {
-    return static_cast<int>(value + 0.5);
+    return static_cast<int>(value + ((value >= 0.0) ? 0.5 : -0.5));
 }
 
 void load_objxy(const double* objxy,
