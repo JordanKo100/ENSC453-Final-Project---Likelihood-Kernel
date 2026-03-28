@@ -10,6 +10,9 @@
 #define N_BUFFER_SIZE 64
 #define WORDS_PER_TILE (N_BUFFER_SIZE / DOUBLES_PER_WORD)
 
+// Pre-calculate the maximum number of wide words needed for objxy
+#define OBJ_PER_TILE ((MAX_COUNT_ONES * 2) / DOUBLES_PER_WORD) 
+
 const int PIX_SUM_LANES = 4;
 const int PIX_CHUNKS = (MAX_COUNT_ONES / PIX_SUM_LANES);
 
@@ -43,15 +46,33 @@ inline uint64_t double_to_bits(double val) {
     return conv.u;
 }
 
-void load_objxy(const double* objxy,
+void load_objxy(const wide_t* objxy,
                 int buffer_objxy[MAX_COUNT_ONES * 2],
                 int countOnes) {
     #pragma HLS INLINE
 
-    loadObjxy: for (int i = 0; i < countOnes * 2; i++) {
+    const int total_doubles = countOnes * 2;
+    const int valid_words = (total_doubles + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
+
+    loadObjxyWide: for (int w = 0; w < OBJ_PER_TILE; w++) {
         #pragma HLS PIPELINE II=1
-        #pragma HLS LOOP_TRIPCOUNT min=1 max=160
-        buffer_objxy[i] = roundDouble(objxy[i]);
+        #pragma HLS LOOP_TRIPCOUNT min=17 max=20
+        wide_t pack = 0;
+
+        if (w < valid_words) {
+            pack = objxy[w];
+        }
+
+        unpackWordObj: for (int d = 0; d < DOUBLES_PER_WORD; d++) {
+            #pragma HLS UNROLL
+            const int idx = w * DOUBLES_PER_WORD + d;
+            if (idx < total_doubles) {
+                const uint64_t bits =
+                    (uint64_t)pack.range((d + 1) * DOUBLE_BITS - 1, d * DOUBLE_BITS);
+                const double val = bits_to_double(bits);
+                buffer_objxy[idx] = roundDouble(val);
+            }
+        }
     }
 }
 
@@ -86,7 +107,6 @@ void load_particles(const wide_t* arrayX,
 
     loadParticlesWide: for (int w = 0; w < WORDS_PER_TILE; w++) {
         #pragma HLS PIPELINE II=1
-        #pragma HLS LOOP_TRIPCOUNT min=8 max=8
         wide_t xpack = 0;
         wide_t ypack = 0;
 
@@ -233,12 +253,12 @@ void likelihood_kernel(int Nparticles,
                        long max_size,
                        const wide_t* arrayX,
                        const wide_t* arrayY,
-                       const double* objxy,
+                       const wide_t* objxy, // Changed to wide_t
                        const int* I,
                        wide_t* likelihood) {
 #pragma HLS INTERFACE m_axi port=arrayX offset=slave bundle=gmem0 max_widen_bitwidth=512
 #pragma HLS INTERFACE m_axi port=arrayY offset=slave bundle=gmem1 max_widen_bitwidth=512
-#pragma HLS INTERFACE m_axi port=objxy offset=slave bundle=gmem2 max_widen_bitwidth=64
+#pragma HLS INTERFACE m_axi port=objxy offset=slave bundle=gmem2 max_widen_bitwidth=512
 #pragma HLS INTERFACE m_axi port=I offset=slave bundle=gmem3 max_widen_bitwidth=32 max_read_burst_length=1 num_read_outstanding=1
 #pragma HLS INTERFACE m_axi port=likelihood offset=slave bundle=gmem4 max_widen_bitwidth=512
 
@@ -261,10 +281,13 @@ void likelihood_kernel(int Nparticles,
     int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES];
     double buffer_likelihood[N_BUFFER_SIZE];
 
-#pragma HLS ARRAY_PARTITION variable=buffer_objxy_offset cyclic factor=4 dim=1
+// partition to accomodate AXI port widening
+#pragma HLS ARRAY_PARTITION variable=buffer_objxy cyclic factor=8 dim=1
 #pragma HLS ARRAY_PARTITION variable=buffer_idx_1D cyclic factor=8 dim=1
-#pragma HLS ARRAY_PARTITION variable=buffer_pixels cyclic factor=4 dim=2
 #pragma HLS ARRAY_PARTITION variable=buffer_likelihood cyclic factor=8 dim=1
+
+// partition for likelihood computation
+#pragma HLS ARRAY_PARTITION variable=buffer_pixels cyclic factor=4 dim=2
 
     load_objxy(objxy, buffer_objxy, countOnes);
     build_obj_offsets(buffer_objxy, buffer_objxy_offset, countOnes, IszY, Nfr);

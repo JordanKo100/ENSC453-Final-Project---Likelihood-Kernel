@@ -18,10 +18,7 @@ inline int tb_roundDouble(double value) {
     return static_cast<int>(value + ((value >= 0.0) ? 0.5 : -0.5));
 }
 
-inline long tb_absLong(long value) {
-    return (value < 0) ? -value : value;
-}
-
+// Bit manipulation helpers for packing doubles into 512-bit wide_t
 inline double bits_to_double_tb(uint64_t bits) {
     union {
         uint64_t u;
@@ -38,6 +35,35 @@ inline uint64_t double_to_bits_tb(double val) {
     } conv;
     conv.d = val;
     return conv.u;
+}
+
+void pack_doubles_to_wide(const double* in, wide_t* out, int count) {
+    const int words = (count + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
+    for (int w = 0; w < words; w++) {
+        wide_t pack = 0;
+        for (int d = 0; d < DOUBLES_PER_WORD; d++) {
+            const int idx = w * DOUBLES_PER_WORD + d;
+            const double val = (idx < count) ? in[idx] : 0.0;
+            const uint64_t bits = double_to_bits_tb(val);
+            pack.range((d + 1) * DOUBLE_BITS - 1, d * DOUBLE_BITS) = bits;
+        }
+        out[w] = pack;
+    }
+}
+
+void unpack_wide_to_doubles(const wide_t* in, double* out, int count) {
+    const int words = (count + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
+    for (int w = 0; w < words; w++) {
+        wide_t pack = in[w];
+        for (int d = 0; d < DOUBLES_PER_WORD; d++) {
+            const int idx = w * DOUBLES_PER_WORD + d;
+            if (idx < count) {
+                const uint64_t bits =
+                    (uint64_t)pack.range((d + 1) * DOUBLE_BITS - 1, d * DOUBLE_BITS);
+                out[idx] = bits_to_double_tb(bits);
+            }
+        }
+    }
 }
 
 int build_objxy_radius5(double* objxy) {
@@ -76,25 +102,25 @@ void compute_reference(int Nparticles,
                        const int* I,
                        double* likelihood_ref) {
     for (int x = 0; x < Nparticles; x++) {
-        const int px = tb_roundDouble(arrayX[x]);
-        const int py = tb_roundDouble(arrayY[x]);
+        int px = tb_roundDouble(arrayX[x]);
+        int py = tb_roundDouble(arrayY[x]);
         double sum = 0.0;
 
         for (int y = 0; y < countOnes; y++) {
-            const int offY = tb_roundDouble(objxy[y * 2]);
-            const int offX = tb_roundDouble(objxy[y * 2 + 1]);
-            const int indX = px + offX;
-            const int indY = py + offY;
-            long idx = tb_absLong((long)indX * (long)IszY * (long)Nfr +
-                                  (long)indY * (long)Nfr + (long)k);
+            int offY = tb_roundDouble(objxy[y * 2]);
+            int offX = tb_roundDouble(objxy[y * 2 + 1]);
+            int indX = px + offX;
+            int indY = py + offY;
+            long idx = std::labs((long)indX * (long)IszY * (long)Nfr +
+                                 (long)indY * (long)Nfr + (long)k);
 
             if (idx >= max_size) {
                 idx = 0;
             }
 
-            const int pix = I[idx];
-            const int a = pix - 100;
-            const int b = pix - 228;
+            int pix = I[idx];
+            int a = pix - 100;
+            int b = pix - 228;
             sum += ((double)(a * a) - (double)(b * b)) / 50.0;
         }
 
@@ -140,40 +166,6 @@ void init_particles_boundary(double* arrayX, double* arrayY, int Nparticles) {
     }
 }
 
-void pack_doubles_to_wide(const double* in, wide_t* out, int count) {
-    const int words = (count + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
-
-    for (int w = 0; w < words; w++) {
-        wide_t pack = 0;
-
-        for (int d = 0; d < DOUBLES_PER_WORD; d++) {
-            const int idx = w * DOUBLES_PER_WORD + d;
-            const double val = (idx < count) ? in[idx] : 0.0;
-            const uint64_t bits = double_to_bits_tb(val);
-            pack.range((d + 1) * DOUBLE_BITS - 1, d * DOUBLE_BITS) = bits;
-        }
-
-        out[w] = pack;
-    }
-}
-
-void unpack_wide_to_doubles(const wide_t* in, double* out, int count) {
-    const int words = (count + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
-
-    for (int w = 0; w < words; w++) {
-        wide_t pack = in[w];
-
-        for (int d = 0; d < DOUBLES_PER_WORD; d++) {
-            const int idx = w * DOUBLES_PER_WORD + d;
-            if (idx < count) {
-                const uint64_t bits =
-                    (uint64_t)pack.range((d + 1) * DOUBLE_BITS - 1, d * DOUBLE_BITS);
-                out[idx] = bits_to_double_tb(bits);
-            }
-        }
-    }
-}
-
 bool run_case(const char* label,
               int Nparticles,
               bool boundary_case,
@@ -185,8 +177,11 @@ bool run_case(const char* label,
     static double arrayY[TB_MAX_NPARTICLES];
     static double likelihood_hw[TB_MAX_NPARTICLES];
     static double likelihood_ref[TB_MAX_NPARTICLES];
+
+    // Wide array allocations
     static wide_t arrayX_wide[(TB_MAX_NPARTICLES + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD];
     static wide_t arrayY_wide[(TB_MAX_NPARTICLES + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD];
+    static wide_t objxy_wide[(TB_MAX_COUNTONES * 2 + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD];
     static wide_t likelihood_wide[(TB_MAX_NPARTICLES + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD];
 
     for (int i = 0; i < TB_MAX_NPARTICLES; i++) {
@@ -202,9 +197,13 @@ bool run_case(const char* label,
         init_particles_interior(arrayX, arrayY, Nparticles);
     }
 
+    // Pack standard double arrays into 512-bit wide_t arrays
     pack_doubles_to_wide(arrayX, arrayX_wide, Nparticles);
     pack_doubles_to_wide(arrayY, arrayY_wide, Nparticles);
+    // objxy stores (y, x) pairs, so the total count is countOnes * 2
+    pack_doubles_to_wide(objxy, objxy_wide, countOnes * 2);
 
+    // Initialize the output wide array
     for (int i = 0; i < (TB_MAX_NPARTICLES + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD; i++) {
         likelihood_wide[i] = 0;
     }
@@ -224,6 +223,7 @@ bool run_case(const char* label,
 
     auto start = std::chrono::high_resolution_clock::now();
 
+    // Call the hardware kernel with the widened interfaces
     likelihood_kernel(
         Nparticles,
         countOnes,
@@ -233,13 +233,14 @@ bool run_case(const char* label,
         max_size,
         arrayX_wide,
         arrayY_wide,
-        objxy,
+        objxy_wide,
         I,
         likelihood_wide);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
 
+    // Unpack the wide result back into standard doubles for comparison
     unpack_wide_to_doubles(likelihood_wide, likelihood_hw, Nparticles);
 
     bool pass = true;
@@ -247,7 +248,7 @@ bool run_case(const char* label,
     const double tol = 1e-9;
 
     for (int i = 0; i < Nparticles; i++) {
-        const double err = std::fabs(likelihood_hw[i] - likelihood_ref[i]);
+        double err = std::fabs(likelihood_hw[i] - likelihood_ref[i]);
         if (err > max_abs_err) {
             max_abs_err = err;
         }
@@ -274,7 +275,7 @@ int main() {
     static double objxy[TB_MAX_COUNTONES * 2];
     static int I[TB_MAX_SIZE];
 
-    const int countOnes = build_objxy_radius5(objxy);
+    int countOnes = build_objxy_radius5(objxy);
     if (countOnes > TB_MAX_COUNTONES) {
         std::cerr << "ERROR: countOnes = " << countOnes
                   << " exceeds TB_MAX_COUNTONES = " << TB_MAX_COUNTONES << "\n";
