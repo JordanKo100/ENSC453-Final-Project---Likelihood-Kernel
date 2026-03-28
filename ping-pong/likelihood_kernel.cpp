@@ -36,32 +36,17 @@ inline uint64_t double_to_bits(double val) {
     return conv.u;
 }
 
-void load_objxy(const wide_t* objxy,
+void load_objxy(const double* objxy,
                 int buffer_objxy[MAX_COUNT_ONES * 2],
                 int countOnes) {
     #pragma HLS INLINE
 
     const int total_doubles = countOnes * 2;
-    const int valid_words = (total_doubles + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
 
-    loadObjxyWide: for (int w = 0; w < OBJ_PER_TILE; w++) {
+    loadObjxy: for (int i = 0; i < total_doubles; i++) {
         #pragma HLS PIPELINE II=1
-        wide_t pack = 0;
-
-        if (w < valid_words) {
-            pack = objxy[w];
-        }
-
-        unpackWordObj: for (int d = 0; d < DOUBLES_PER_WORD; d++) {
-            #pragma HLS UNROLL
-            const int idx = w * DOUBLES_PER_WORD + d;
-            if (idx < total_doubles) {
-                const uint64_t bits =
-                    (uint64_t)pack.range((d + 1) * DOUBLE_BITS - 1, d * DOUBLE_BITS);
-                const double val = bits_to_double(bits);
-                buffer_objxy[idx] = roundDouble(val);
-            }
-        }
+        #pragma HLS LOOP_TRIPCOUNT min=2 max=160
+        buffer_objxy[i] = roundDouble(objxy[i]);
     }
 }
 
@@ -264,12 +249,12 @@ void likelihood_kernel(int Nparticles,
                        long max_size,
                        const wide_t* arrayX,
                        const wide_t* arrayY,
-                       const wide_t* objxy,
+                       const double* objxy,
                        const int* I,
                        wide_t* likelihood) {
 #pragma HLS INTERFACE m_axi port=arrayX offset=slave bundle=gmem0 max_widen_bitwidth=512
 #pragma HLS INTERFACE m_axi port=arrayY offset=slave bundle=gmem1 max_widen_bitwidth=512
-#pragma HLS INTERFACE m_axi port=objxy offset=slave bundle=gmem2 max_widen_bitwidth=512
+#pragma HLS INTERFACE m_axi port=objxy offset=slave bundle=gmem2 max_widen_bitwidth=64
 #pragma HLS INTERFACE m_axi port=I offset=slave bundle=gmem3 max_widen_bitwidth=32 num_read_outstanding=64 max_read_burst_length=16
 #pragma HLS INTERFACE m_axi port=likelihood offset=slave bundle=gmem4 max_widen_bitwidth=512
 
@@ -300,7 +285,7 @@ void likelihood_kernel(int Nparticles,
     build_obj_offsets(buffer_objxy, buffer_objxy_offset, countOnes, IszY, Nfr);
 
 Particle_loop: for (int base = 0; base < Nparticles; base += N_BUFFER_SIZE) {
-    #pragma HLS LOOP_TRIPCOUNT min=1 max=32 // max is calculated as the maximum Nparticles / N_BUFFER_SIZE (i.e. max Nparticles = 64 * 32 = 2048 particles)
+    #pragma HLS LOOP_TRIPCOUNT min=1 max=157 // max is calculated as the maximum Nparticles / N_BUFFER_SIZE (i.e. max Nparticles = 64 * 32 = 2048 particles)
     #pragma HLS LOOP_FLATTEN off
 
         int activeParticles = Nparticles - base;

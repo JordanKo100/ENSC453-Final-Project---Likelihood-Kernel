@@ -36,7 +36,7 @@ void likelihood_kernel(int Nparticles,
                        long max_size,
                        const wide_t* arrayX,
                        const wide_t* arrayY,
-                       const wide_t* objxy,
+                       const double* objxy,
                        const int* I,
                        wide_t* likelihood);
 

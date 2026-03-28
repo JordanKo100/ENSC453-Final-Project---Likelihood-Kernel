@@ -12,6 +12,7 @@
 #define TB_NFR 3
 #define TB_K 1
 #define TB_MAX_SIZE 1000000
+#define TB_MAX_COUNTONES 80
 
 inline int tb_roundDouble(double value) {
     return static_cast<int>(value + ((value >= 0.0) ? 0.5 : -0.5));
@@ -71,13 +72,11 @@ int build_objxy_radius5(double* objxy) {
     const int center = radius - 1;
 
     int countOnes = 0;
-
     for (int x = 0; x < diameter; x++) {
         for (int y = 0; y < diameter; y++) {
             double distance = std::sqrt(
                 std::pow((double)(x - center), 2.0) +
                 std::pow((double)(y - center), 2.0));
-
             if (distance < radius) {
                 objxy[countOnes * 2] = (double)(y - center);
                 objxy[countOnes * 2 + 1] = (double)(x - center);
@@ -112,7 +111,6 @@ void compute_reference(int Nparticles,
             int indY = py + offY;
             long idx = std::labs((long)indX * (long)IszY * (long)Nfr +
                                  (long)indY * (long)Nfr + (long)k);
-
             if (idx >= max_size) {
                 idx = 0;
             }
@@ -171,16 +169,16 @@ bool run_case(const char* label,
               long max_size,
               const double* objxy,
               int countOnes,
-              const int* I) {
+              const int* I) 
+{
     static double arrayX[TB_MAX_NPARTICLES];
     static double arrayY[TB_MAX_NPARTICLES];
     static double likelihood_hw[TB_MAX_NPARTICLES];
     static double likelihood_ref[TB_MAX_NPARTICLES];
 
-    // Wide array allocations
+    // Wide array allocations (objxy_wide removed)
     static wide_t arrayX_wide[(TB_MAX_NPARTICLES + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD];
     static wide_t arrayY_wide[(TB_MAX_NPARTICLES + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD];
-    static wide_t objxy_wide[(MAX_COUNT_ONES * 2 + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD];
     static wide_t likelihood_wide[(TB_MAX_NPARTICLES + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD];
 
     for (int i = 0; i < TB_MAX_NPARTICLES; i++) {
@@ -199,9 +197,7 @@ bool run_case(const char* label,
     // Pack standard double arrays into 512-bit wide_t arrays
     pack_doubles_to_wide(arrayX, arrayX_wide, Nparticles);
     pack_doubles_to_wide(arrayY, arrayY_wide, Nparticles);
-    // objxy stores (y, x) pairs, so the total count is countOnes * 2
-    pack_doubles_to_wide(objxy, objxy_wide, countOnes * 2);
-
+    
     // Initialize the output wide array
     for (int i = 0; i < (TB_MAX_NPARTICLES + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD; i++) {
         likelihood_wide[i] = 0;
@@ -222,7 +218,7 @@ bool run_case(const char* label,
 
     auto start = std::chrono::high_resolution_clock::now();
 
-    // Call the hardware kernel with the widened interfaces
+    // Call the hardware kernel directly with the double* objxy
     likelihood_kernel(
         Nparticles,
         countOnes,
@@ -232,7 +228,7 @@ bool run_case(const char* label,
         max_size,
         arrayX_wide,
         arrayY_wide,
-        objxy_wide,
+        objxy,
         I,
         likelihood_wide);
 
@@ -271,13 +267,14 @@ bool run_case(const char* label,
 }
 
 int main() {
-    static double objxy[MAX_COUNT_ONES * 2];
+    static double objxy[TB_MAX_COUNTONES * 2];
     static int I[TB_MAX_SIZE];
 
     int countOnes = build_objxy_radius5(objxy);
-    if (countOnes > MAX_COUNT_ONES) {
+
+    if (countOnes > TB_MAX_COUNTONES) {
         std::cerr << "ERROR: countOnes = " << countOnes
-                  << " exceeds MAX_COUNT_ONES = " << MAX_COUNT_ONES << "\n";
+                  << " exceeds TB_MAX_COUNTONES = " << TB_MAX_COUNTONES << "\n";
         return 1;
     }
 

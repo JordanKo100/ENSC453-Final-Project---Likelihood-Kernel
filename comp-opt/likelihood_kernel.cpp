@@ -202,7 +202,7 @@ void likelihood_kernel(int Nparticles,
 
 Particle_loop:
     for (int base = 0; base < Nparticles; base += N_BUFFER_SIZE) {
-#pragma HLS LOOP_TRIPCOUNT min=1 max=32
+#pragma HLS LOOP_TRIPCOUNT min=1 max=157
 #pragma HLS LOOP_FLATTEN off
         
         // ensures no remaining particles are left uncalculated
