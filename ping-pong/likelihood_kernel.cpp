@@ -46,7 +46,6 @@ void load_objxy(const wide_t* objxy,
 
     loadObjxyWide: for (int w = 0; w < OBJ_PER_TILE; w++) {
         #pragma HLS PIPELINE II=1
-        #pragma HLS LOOP_TRIPCOUNT min=17 max=20
         wide_t pack = 0;
 
         if (w < valid_words) {
@@ -167,36 +166,35 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
     const double scale = (kPixelScaleNum / kPixelDen) * inv_count;
     const double bias = kPixelBiasNum / kPixelDen;
 
-    computeParticles: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+    computeParticles: for (int x = 0; x < activeParticles; x++) {
         #pragma HLS PIPELINE II=1
-        if (x < activeParticles){
-            int partial_sum[PIX_SUM_LANES];
-            #pragma HLS ARRAY_PARTITION variable=partial_sum complete dim=1
+        #pragma HLS LOOP_TRIPCOUNT min=1 max=64
+        int partial_sum[PIX_SUM_LANES];
+        #pragma HLS ARRAY_PARTITION variable=partial_sum complete dim=1
 
-            initPartialSums: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
-                #pragma HLS UNROLL
-                partial_sum[lane] = 0;
-            }
+        initPartialSums: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
+            #pragma HLS UNROLL
+            partial_sum[lane] = 0;
+        }
 
-            accumPixels: for (int chunk = 0; chunk < PIX_CHUNKS; chunk++) {
-                #pragma HLS UNROLL
-                const int chunk_idx = chunk * PIX_SUM_LANES;
-                accumulateLanes: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
-                    const int idx = chunk_idx + lane;
-                    if (idx < countOnes) {
-                        partial_sum[lane] += buffer_pixels[x][idx];
-                    }
+        accumPixels: for (int chunk = 0; chunk < PIX_CHUNKS; chunk++) {
+            #pragma HLS UNROLL
+            const int chunk_idx = chunk * PIX_SUM_LANES;
+            accumulateLanes: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
+                const int idx = chunk_idx + lane;
+                if (idx < countOnes) {
+                    partial_sum[lane] += buffer_pixels[x][idx];
                 }
             }
-
-            int pixel_sum = 0;
-            sumPartialSums: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
-                #pragma HLS UNROLL
-                pixel_sum += partial_sum[lane];
-            }
-
-            buffer_likelihood[x] = scale * (double)pixel_sum - bias;
         }
+
+        int pixel_sum = 0;
+        sumPartialSums: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
+            #pragma HLS UNROLL
+            pixel_sum += partial_sum[lane];
+        }
+
+        buffer_likelihood[x] = scale * (double)pixel_sum - bias;
     }
 }
 
@@ -212,7 +210,6 @@ void store_likelihood(wide_t* likelihood,
 
     storeLikelihoodWide: for (int w = 0; w < WORDS_PER_TILE; w++) {
         #pragma HLS PIPELINE II=1
-        #pragma HLS LOOP_TRIPCOUNT min=8 max=8
 
         const bool write_word =
             (w < full_words) || ((w == full_words) && (remainder != 0));

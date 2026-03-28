@@ -25,7 +25,7 @@ void load_objxy(const double* objxy,
 	loadObjxy:
 			for (int i = 0; i < countOnes * 2; i++) {
 #pragma HLS PIPELINE II=1
-#pragma HLS LOOP_TRIPCOUNT min=140 max =160
+#pragma HLS LOOP_TRIPCOUNT min=2 max =160
 				buffer_objxy[i] = roundDouble(objxy[i]);
 				}
 }
@@ -57,15 +57,15 @@ void load_particles(const double* arrayX,
                     int k) {
     #pragma HLS INLINE
 
-    loadParticles: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+    loadParticles: for (int x = 0; x < activeParticles; x++) {
         #pragma HLS PIPELINE II=1
-        if (x < activeParticles) {
-            const int px = roundDouble(arrayX[base + x]);
-            const int py = roundDouble(arrayY[base + x]);
-            
-            buffer_idx_1D[x] =
-                (long)px * (long)IszY * (long)Nfr + (long)py * (long)Nfr + (long)k;
-        }
+        #pragma HLS LOOP_TRIPCOUNT min=1 max=64
+
+        const int px = roundDouble(arrayX[base + x]);
+        const int py = roundDouble(arrayY[base + x]);
+        
+        buffer_idx_1D[x] =
+            (long)px * (long)IszY * (long)Nfr + (long)py * (long)Nfr + (long)k;
     }
 }
 
@@ -113,11 +113,11 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
 
 		computeLikelihood:
 	    		for (int x = 0; x < activeParticles; x++) {
-#pragma HLS LOOP_TRIPCOUNT min=64 max=64
+#pragma HLS LOOP_TRIPCOUNT min=1 max=64
 			int pixel_sum = 0;
 	    		accumuLikelihood:
 	        		for (int y = 0; y < countOnes; y++) {
-#pragma HLS LOOP_TRIPCOUNT min=70 max=80
+#pragma HLS LOOP_TRIPCOUNT min=80 max=80
 				pixel_sum += buffer_pixels[x][y];
         		}
 
@@ -132,11 +132,11 @@ void store_likelihood(double* likelihood,
                       int activeParticles) {
     #pragma HLS INLINE
 
-    storeLikelihood: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+    storeLikelihood: for (int x = 0; x < activeParticles; x++) {
         #pragma HLS PIPELINE II=1
-        if (x < activeParticles) {
-            likelihood[base + x] = buffer_likelihood[x];
-        }
+        #pragma HLS LOOP_TRIPCOUNT min=1 max=64
+
+        likelihood[base + x] = buffer_likelihood[x];
     }
 }
 

@@ -24,7 +24,7 @@ void load_objxy(const double* objxy,
 
     loadObjxy: for (int i = 0; i < countOnes * 2; i++) {
         #pragma HLS PIPELINE II=1
-        #pragma HLS LOOP_TRIPCOUNT min=1 max=160
+        #pragma HLS LOOP_TRIPCOUNT min=2 max=160
         buffer_objxy[i] = roundDouble(objxy[i]);
     }
 }
@@ -55,15 +55,15 @@ void load_particles(const double* arrayX,
                     int k) {
     #pragma HLS INLINE
 
-    loadParticles: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+    loadParticles: for (int x = 0; x < activeParticles; x++) {
         #pragma HLS PIPELINE II=1
-        if (x < activeParticles) {
-            const int px = roundDouble(arrayX[base + x]);
-            const int py = roundDouble(arrayY[base + x]);
-            
-            buffer_idx_1D[x] =
-                (long)px * (long)IszY * (long)Nfr + (long)py * (long)Nfr + (long)k;
-        }
+        #pragma HLS LOOP_TRIPCOUNT min=1 max=64
+
+        const int px = roundDouble(arrayX[base + x]);
+        const int py = roundDouble(arrayY[base + x]);
+        
+        buffer_idx_1D[x] =
+            (long)px * (long)IszY * (long)Nfr + (long)py * (long)Nfr + (long)k;
     }
 }
 
@@ -107,36 +107,35 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
     const double scale = (kPixelScaleNum / kPixelDen) * inv_count;
     const double bias = kPixelBiasNum / kPixelDen;
 
-    computeParticles: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+    computeParticles: for (int x = 0; x < activeParticles; x++) {
         #pragma HLS PIPELINE II=1
-        if (x < activeParticles){
-            int partial_sum[PIX_SUM_LANES];
-            #pragma HLS ARRAY_PARTITION variable=partial_sum complete dim=1
+        #pragma HLS LOOP_TRIPCOUNT min=1 max=64
+        int partial_sum[PIX_SUM_LANES];
+        #pragma HLS ARRAY_PARTITION variable=partial_sum complete dim=1
 
-            initPartialSums: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
-                #pragma HLS UNROLL
-                partial_sum[lane] = 0;
-            }
+        initPartialSums: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
+            #pragma HLS UNROLL
+            partial_sum[lane] = 0;
+        }
 
-            accumPixels: for (int chunk = 0; chunk < PIX_CHUNKS; chunk++) {
-                #pragma HLS UNROLL
-                const int chunk_idx = chunk * PIX_SUM_LANES;
-                accumulateLanes: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
-                    const int idx = chunk_idx + lane;
-                    if (idx < countOnes) {
-                        partial_sum[lane] += buffer_pixels[x][idx];
-                    }
+        accumPixels: for (int chunk = 0; chunk < PIX_CHUNKS; chunk++) {
+            #pragma HLS UNROLL
+            const int chunk_idx = chunk * PIX_SUM_LANES;
+            accumulateLanes: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
+                const int idx = chunk_idx + lane;
+                if (idx < countOnes) {
+                    partial_sum[lane] += buffer_pixels[x][idx];
                 }
             }
-
-            int pixel_sum = 0;
-            sumPartialSums: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
-                #pragma HLS UNROLL
-                pixel_sum += partial_sum[lane];
-            }
-
-            buffer_likelihood[x] = scale * (double)pixel_sum - bias;
         }
+
+        int pixel_sum = 0;
+        sumPartialSums: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
+            #pragma HLS UNROLL
+            pixel_sum += partial_sum[lane];
+        }
+
+        buffer_likelihood[x] = scale * (double)pixel_sum - bias;
     }
 }
 
@@ -146,11 +145,11 @@ void store_likelihood(double* likelihood,
                       int activeParticles) {
     #pragma HLS INLINE
 
-    storeLikelihood: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+    storeLikelihood: for (int x = 0; x < activeParticles; x++) {
         #pragma HLS PIPELINE II=1
-        if (x < activeParticles) {
-            likelihood[base + x] = buffer_likelihood[x];
-        }
+        #pragma HLS LOOP_TRIPCOUNT min=1 max=64
+
+        likelihood[base + x] = buffer_likelihood[x];
     }
 }
 
