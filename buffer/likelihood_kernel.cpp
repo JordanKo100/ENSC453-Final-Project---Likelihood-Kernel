@@ -47,25 +47,26 @@ void build_obj_offsets(const int buffer_objxy[MAX_COUNT_ONES * 2],
 		}
 }
 
+void load_particles(const double* arrayX,
+                    const double* arrayY,
+                    long buffer_idx_1D[N_BUFFER_SIZE],
+                    int base,
+                    int activeParticles,
+                    int IszY,
+                    int Nfr,
+                    int k) {
+    #pragma HLS INLINE
 
-void load_particles(const double* arrayX, 
-		    const double* arrayY, 
-		    long buffer_idx_1D[N_BUFFER_SIZE],
-		    int base,
-		    int activeParticles,
-		    int IszY,
-		    int Nfr,
-		    int k){
-
-		#pragma HLS INLINE
-		loadParticles: for (int x = 0; x < activeParticles; x++) {
-			#pragma HLS PIPELINE II=1
-
-			const int px = roundDouble(arrayX[base + x]);
-			const int py = roundDouble(arrayY[base + x]);
-			buffer_idx_1D[x] =
-				(long)px * (long)IszY * (long)Nfr + (long)py * (long)Nfr + (long)k;
-		}
+    loadParticles: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+        #pragma HLS PIPELINE II=1
+        if (x < activeParticles) {
+            const int px = roundDouble(arrayX[base + x]);
+            const int py = roundDouble(arrayY[base + x]);
+            
+            buffer_idx_1D[x] =
+                (long)px * (long)IszY * (long)Nfr + (long)py * (long)Nfr + (long)k;
+        }
+    }
 }
 
 
@@ -116,7 +117,6 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
 			int pixel_sum = 0;
 	    		accumuLikelihood:
 	        		for (int y = 0; y < countOnes; y++) {
-#pragma HLS PIPELINE II=1
 #pragma HLS LOOP_TRIPCOUNT min=70 max=80
 				pixel_sum += buffer_pixels[x][y];
         		}
@@ -127,16 +127,17 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
 
 
 void store_likelihood(double* likelihood,
-		      const double buffer_likelihood[N_BUFFER_SIZE],
-		      int base,
-		      int activeParticles) {
+                      const double buffer_likelihood[N_BUFFER_SIZE],
+                      int base,
+                      int activeParticles) {
+    #pragma HLS INLINE
 
-		#pragma HLS INLINE
-		storeLikelihood: for (int x = 0; x < activeParticles; x++) {
-			#pragma HLS PIPELINE II=1
-			
-			likelihood[base + x] = buffer_likelihood[x];
-		}
+    storeLikelihood: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+        #pragma HLS PIPELINE II=1
+        if (x < activeParticles) {
+            likelihood[base + x] = buffer_likelihood[x];
+        }
+    }
 }
 
 extern "C" {
