@@ -7,7 +7,7 @@
 #define MAX_COUNT_ONES 80
 #define N_BUFFER_SIZE 64
 
-const int PIX_SUM_LANES = 4;
+const int PIX_SUM_LANES = 10;
 const int PIX_CHUNKS = (MAX_COUNT_ONES / PIX_SUM_LANES);
 
 static const double kPixelScaleNum = 256.0;
@@ -113,6 +113,7 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
     const double bias = kPixelBiasNum / kPixelDen;
 
     computeParticles: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+        #pragma HLS PIPELINE II=1
         if (x < tileSize){
             int partial_sum[PIX_SUM_LANES];
             #pragma HLS ARRAY_PARTITION variable=partial_sum complete dim=1
@@ -123,7 +124,7 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
             }
 
             accumPixels: for (int chunk = 0; chunk < PIX_CHUNKS; chunk++) {
-                #pragma HLS PIPELINE II=1
+                // #pragma HLS PIPELINE II=1
                 const int chunk_idx = chunk * PIX_SUM_LANES;
                 accumulateLanes: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
                     #pragma HLS UNROLL
@@ -174,7 +175,7 @@ void likelihood_kernel(int Nparticles,
 #pragma HLS INTERFACE m_axi port=arrayX offset=slave bundle=gmem0 max_widen_bitwidth=64
 #pragma HLS INTERFACE m_axi port=arrayY offset=slave bundle=gmem1 max_widen_bitwidth=64
 #pragma HLS INTERFACE m_axi port=objxy offset=slave bundle=gmem2 max_widen_bitwidth=64
-#pragma HLS INTERFACE m_axi port=I offset=slave bundle=gmem3 max_widen_bitwidth=32 max_read_burst_length=1 num_read_outstanding=1
+#pragma HLS INTERFACE m_axi port=I offset=slave bundle=gmem3 max_widen_bitwidth=32
 #pragma HLS INTERFACE m_axi port=likelihood offset=slave bundle=gmem4 max_widen_bitwidth=64
 
 #pragma HLS INTERFACE s_axilite port=Nparticles bundle=control
@@ -197,7 +198,7 @@ void likelihood_kernel(int Nparticles,
     double buffer_likelihood[N_BUFFER_SIZE];
 
 // partition for likelihood computation
-#pragma HLS ARRAY_PARTITION variable=buffer_pixels cyclic factor=4 dim=2
+#pragma HLS ARRAY_PARTITION variable=buffer_pixels complete dim=2
 
     load_objxy(objxy, buffer_objxy, countOnes);
     build_obj_offsets(buffer_objxy, buffer_objxy_offset, countOnes, IszY, Nfr);
