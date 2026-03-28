@@ -64,7 +64,6 @@ void run_likelihood(int Nparticles, int countOnes, int IszY, int Nfr, int k,
 int main() {
     // 1. Setup Data
     const int Nparticles = 10000;
-    const int countOnes = 400;
     const int IszY = 480;
     const int Nfr = 3;
     const int k = 1;
@@ -73,18 +72,43 @@ int main() {
 
     printf("Thread count: %d\n", threads);
 
-    std::vector<double> arrayX(Nparticles, 100.0);
-    std::vector<double> arrayY(Nparticles, 100.0);
+    // Build objxy using the radius=5 logic from the testbench to get realistic offsets
+    const int radius = 5;
+    const int diameter = radius * 2 - 1;
+    const int center = radius - 1;
+    int countOnes = 0;
     
-    // CHANGED: objxy is now double
-    std::vector<double> objxy(countOnes * 2, 5.0); 
+    // Allocate max possible size for a 9x9 grid, then resize down to actual countOnes
+    std::vector<double> objxy(diameter * diameter * 2, 0.0);
+    for (int x = 0; x < diameter; x++) {
+        for (int y = 0; y < diameter; y++) {
+            double distance = std::sqrt(
+                std::pow((double)(x - center), 2.0) +
+                std::pow((double)(y - center), 2.0));
+            if (distance < radius) {
+                objxy[countOnes * 2] = (double)(y - center);
+                objxy[countOnes * 2 + 1] = (double)(x - center);
+                countOnes++;
+            }
+        }
+    }
+    objxy.resize(countOnes * 2);
+
+    // Initialize particles using the 'interior' logic from the testbench [cite: 90, 91]
+    std::vector<double> arrayX(Nparticles);
+    std::vector<double> arrayY(Nparticles);
+    for (int i = 0; i < Nparticles; i++) {
+        arrayX[i] = 80.0 + (i % 23) * 1.75;
+        arrayY[i] = 120.0 + (i % 19) * 1.125;
+    }
     
-    // CHANGED: I is now int
-    std::vector<int> I(max_size, 120); 
+    // Initialize I array with the modulo pattern from the testbench [cite: 120]
+    std::vector<int> I(max_size); 
+    for (long i = 0; i < max_size; i++) {
+        I[i] = 100 + (int)(i % 129);
+    }
     
     std::vector<double> likelihood(Nparticles);
-    
-    // CHANGED: ind_buffer is now int
     std::vector<int> ind_buffer(Nparticles * countOnes); 
 
     printf("Starting Speedup Test (N=%d, Points=%d)...\n", Nparticles, countOnes);
@@ -117,4 +141,3 @@ int main() {
 
     return 0;
 }
-
