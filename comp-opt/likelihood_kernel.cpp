@@ -196,10 +196,8 @@ void likelihood_kernel(int Nparticles,
     int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES];
     double buffer_likelihood[N_BUFFER_SIZE];
 
-#pragma HLS ARRAY_PARTITION variable=buffer_objxy_offset cyclic factor=4 dim=1
-#pragma HLS ARRAY_PARTITION variable=buffer_idx_1D cyclic factor=8 dim=1
+// partition for likelihood computation
 #pragma HLS ARRAY_PARTITION variable=buffer_pixels cyclic factor=4 dim=2
-#pragma HLS ARRAY_PARTITION variable=buffer_likelihood cyclic factor=8 dim=1
 
     load_objxy(objxy, buffer_objxy, countOnes);
     build_obj_offsets(buffer_objxy, buffer_objxy_offset, countOnes, IszY, Nfr);
