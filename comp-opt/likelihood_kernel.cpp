@@ -11,6 +11,8 @@
 const int PIX_SUM_LANES = 10;
 const int PIX_CHUNKS = (MAX_COUNT_ONES / PIX_SUM_LANES);
 
+static_assert(MAX_COUNT_ONES % PIX_SUM_LANES == 0, "MAX_COUNT_ONES must be perfectly divisible by PIX_SUM_LANES!");
+
 static const double kPixelScaleNum = 256.0;
 static const double kPixelBiasNum = 41984.0;
 static const double kPixelDen = 50.0;
