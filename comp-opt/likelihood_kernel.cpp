@@ -124,10 +124,9 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
             }
 
             accumPixels: for (int chunk = 0; chunk < PIX_CHUNKS; chunk++) {
-                // #pragma HLS PIPELINE II=1
+                #pragma HLS UNROLL
                 const int chunk_idx = chunk * PIX_SUM_LANES;
                 accumulateLanes: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
-                    #pragma HLS UNROLL
                     const int idx = chunk_idx + lane;
                     if (idx < countOnes) {
                         partial_sum[lane] += buffer_pixels[x][idx];

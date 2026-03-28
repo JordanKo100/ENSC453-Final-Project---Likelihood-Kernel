@@ -6,14 +6,16 @@
 
 #include "likelihood_kernel.h"
 
-#define MAX_COUNT_ONES 80
+#define MAX_COUNT_ONES 80 // MASK SIZE
 #define N_BUFFER_SIZE 64
+
+// Pre-calculate the number of wide words needed for loading particles and storing likelihood  
 #define WORDS_PER_TILE (N_BUFFER_SIZE / DOUBLES_PER_WORD)
 
 // Pre-calculate the maximum number of wide words needed for objxy
 #define OBJ_PER_TILE ((MAX_COUNT_ONES * 2) / DOUBLES_PER_WORD) 
 
-const int PIX_SUM_LANES = 4;
+const int PIX_SUM_LANES = 10;
 const int PIX_CHUNKS = (MAX_COUNT_ONES / PIX_SUM_LANES);
 
 static const double kPixelScaleNum = 256.0;
@@ -178,6 +180,7 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
     const double bias = kPixelBiasNum / kPixelDen;
 
     computeParticles: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+        #pragma HLS PIPELINE II=1
         if (x < tileSize){
             int partial_sum[PIX_SUM_LANES];
             #pragma HLS ARRAY_PARTITION variable=partial_sum complete dim=1
@@ -188,10 +191,9 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
             }
 
             accumPixels: for (int chunk = 0; chunk < PIX_CHUNKS; chunk++) {
-                #pragma HLS PIPELINE II=1
+                #pragma HLS UNROLL
                 const int chunk_idx = chunk * PIX_SUM_LANES;
                 accumulateLanes: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
-                    #pragma HLS UNROLL
                     const int idx = chunk_idx + lane;
                     if (idx < countOnes) {
                         partial_sum[lane] += buffer_pixels[x][idx];
@@ -253,13 +255,13 @@ void likelihood_kernel(int Nparticles,
                        long max_size,
                        const wide_t* arrayX,
                        const wide_t* arrayY,
-                       const wide_t* objxy, // Changed to wide_t
+                       const wide_t* objxy,
                        const int* I,
                        wide_t* likelihood) {
 #pragma HLS INTERFACE m_axi port=arrayX offset=slave bundle=gmem0 max_widen_bitwidth=512
 #pragma HLS INTERFACE m_axi port=arrayY offset=slave bundle=gmem1 max_widen_bitwidth=512
 #pragma HLS INTERFACE m_axi port=objxy offset=slave bundle=gmem2 max_widen_bitwidth=512
-#pragma HLS INTERFACE m_axi port=I offset=slave bundle=gmem3 max_widen_bitwidth=32 max_read_burst_length=1 num_read_outstanding=1
+#pragma HLS INTERFACE m_axi port=I offset=slave bundle=gmem3 max_widen_bitwidth=32
 #pragma HLS INTERFACE m_axi port=likelihood offset=slave bundle=gmem4 max_widen_bitwidth=512
 
 #pragma HLS INTERFACE s_axilite port=Nparticles bundle=control
@@ -287,14 +289,14 @@ void likelihood_kernel(int Nparticles,
 #pragma HLS ARRAY_PARTITION variable=buffer_likelihood cyclic factor=8 dim=1
 
 // partition for likelihood computation
-#pragma HLS ARRAY_PARTITION variable=buffer_pixels cyclic factor=4 dim=2
+#pragma HLS ARRAY_PARTITION variable=buffer_pixels complete dim=2
 
     load_objxy(objxy, buffer_objxy, countOnes);
     build_obj_offsets(buffer_objxy, buffer_objxy_offset, countOnes, IszY, Nfr);
 
 Particle_loop:
     for (int base = 0; base < Nparticles; base += N_BUFFER_SIZE) {
-#pragma HLS LOOP_TRIPCOUNT min=1 max=32
+#pragma HLS LOOP_TRIPCOUNT min=1 max=32 // max is calculated as the maximum Nparticles / N_BUFFER_SIZE (i.e. max Nparticles = 64 * 32 = 2048 particles)
 #pragma HLS LOOP_FLATTEN off
         int tileSize = Nparticles - base;
         if (tileSize > N_BUFFER_SIZE) {
