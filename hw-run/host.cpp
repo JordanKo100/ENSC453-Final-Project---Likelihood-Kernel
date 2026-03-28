@@ -13,7 +13,7 @@
 #include <CL/cl2.hpp>
 
 #include "likelihood_kernel.h"
-#include "timer.h" 
+#include "my_timer.h" 
 
 // --- PRODUCTION HARDWARE LIMITS (1080p Grayscale) ---
 #define TB_MAX_NPARTICLES 10000
@@ -235,9 +235,15 @@ int main(int argc, char** argv) {
 
     std::string xclbinFilename = argv[1];
 
+    // OpenCL Setup
+    std::vector<cl::Platform> platforms;
+    cl::Platform::get(&platforms);
+    cl::Platform platform = platforms.front();
+    
     std::vector<cl::Device> devices;
-    cl::Platform::get(&devices);
+    platform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
     cl::Device device = devices.front(); 
+    
     cl::Context context(device);
     cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE);
 

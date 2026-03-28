@@ -22,6 +22,19 @@ const int PIX_CHUNKS = (MAX_COUNT_ONES / PIX_SUM_LANES);
 static_assert(N_BUFFER_SIZE % WORDS_PER_TILE == 0, "N_BUFFER_SIZE must be strictly divisible by 8 to align with 512-bit AXI ports!");
 static_assert(MAX_COUNT_ONES % PIX_SUM_LANES == 0, "MAX_COUNT_ONES must be perfectly divisible by PIX_SUM_LANES!");
 
+// --- ALGORITHM PARAMETERS (Single Source of Truth) ---
+constexpr double PIXEL_A_OFFSET = 100.0;
+constexpr double PIXEL_B_OFFSET = 228.0;
+constexpr double PIXEL_DENOM = 50.0;
+
+constexpr double PIXEL_SCALE_NUM = (2.0 * PIXEL_B_OFFSET) - (2.0 * PIXEL_A_OFFSET); 
+constexpr double PIXEL_BIAS_NUM = (PIXEL_B_OFFSET * PIXEL_B_OFFSET) - (PIXEL_A_OFFSET * PIXEL_A_OFFSET);
+
+// --- SHARED UTILITIES ---
+inline int shared_roundDouble(double value) {
+    return static_cast<int>(value + ((value >= 0.0) ? 0.5 : -0.5));
+}
+
 typedef ap_uint<AXI_BITS> wide_t;
 
 #ifdef __cplusplus
