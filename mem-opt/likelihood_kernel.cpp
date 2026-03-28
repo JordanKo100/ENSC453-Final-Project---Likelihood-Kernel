@@ -8,9 +8,10 @@
 
 #define MAX_COUNT_ONES 80
 #define N_BUFFER_SIZE 64
-#define POINT_PAR 4
-#define POINT_GROUPS (MAX_COUNT_ONES / POINT_PAR)
 #define WORDS_PER_TILE (N_BUFFER_SIZE / DOUBLES_PER_WORD)
+
+const int PIX_SUM_LANES = 4;
+const int PIX_CHUNKS = (MAX_COUNT_ONES / PIX_SUM_LANES);
 
 static const double kPixelScaleNum = 256.0;
 static const double kPixelBiasNum = 41984.0;
@@ -45,50 +46,47 @@ inline uint64_t double_to_bits(double val) {
 void load_objxy(const double* objxy,
                 int buffer_objxy[MAX_COUNT_ONES * 2],
                 int countOnes) {
-#pragma HLS INLINE
+    #pragma HLS INLINE
 
-loadObjxy:
-    for (int i = 0; i < countOnes * 2; i++) {
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_TRIPCOUNT min=1 max=160
+    loadObjxy: for (int i = 0; i < countOnes * 2; i++) {
+        #pragma HLS PIPELINE II=1
+        #pragma HLS LOOP_TRIPCOUNT min=1 max=160
         buffer_objxy[i] = roundDouble(objxy[i]);
     }
 }
 
 void build_obj_offsets(const int buffer_objxy[MAX_COUNT_ONES * 2],
-                       int buffer_obj_offsets[MAX_COUNT_ONES],
+                       int buffer_objxy_offset[MAX_COUNT_ONES],
                        int countOnes,
                        int IszY,
                        int Nfr) {
-#pragma HLS INLINE
+    #pragma HLS INLINE
 
-buildObjOffsets:
-    for (int i = 0; i < countOnes; i++) {
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_TRIPCOUNT min=1 max=80
+    buildObjOffsets: for (int i = 0; i < countOnes; i++) {
+        #pragma HLS PIPELINE II=1
+        #pragma HLS LOOP_TRIPCOUNT min=1 max=80
         const int offY = buffer_objxy[i * 2];
         const int offX = buffer_objxy[i * 2 + 1];
-        buffer_obj_offsets[i] = offX * IszY * Nfr + offY * Nfr;
+        buffer_objxy_offset[i] = offX * IszY * Nfr + offY * Nfr;
     }
 }
 
 void load_particles(const wide_t* arrayX,
                     const wide_t* arrayY,
-                    long particle_base_buffer[N_BUFFER_SIZE],
+                    long buffer_idx_1D[N_BUFFER_SIZE],
                     int base,
                     int tileSize,
                     int IszY,
                     int Nfr,
                     int k) {
-#pragma HLS INLINE
+    #pragma HLS INLINE
 
     const int base_word = base / DOUBLES_PER_WORD;
     const int valid_words = (tileSize + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
 
-loadParticlesWide:
-    for (int w = 0; w < WORDS_PER_TILE; w++) {
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_TRIPCOUNT min=8 max=8
+    loadParticlesWide: for (int w = 0; w < WORDS_PER_TILE; w++) {
+        #pragma HLS PIPELINE II=1
+        #pragma HLS LOOP_TRIPCOUNT min=8 max=8
         wide_t xpack = 0;
         wide_t ypack = 0;
 
@@ -97,11 +95,9 @@ loadParticlesWide:
             ypack = arrayY[base_word + w];
         }
 
-    unpackWord:
-        for (int d = 0; d < DOUBLES_PER_WORD; d++) {
-#pragma HLS UNROLL
+        unpackWord: for (int d = 0; d < DOUBLES_PER_WORD; d++) {
+            #pragma HLS UNROLL
             const int idx = w * DOUBLES_PER_WORD + d;
-
             if (idx < tileSize) {
                 const uint64_t xbits =
                     (uint64_t)xpack.range((d + 1) * DOUBLE_BITS - 1, d * DOUBLE_BITS);
@@ -111,40 +107,38 @@ loadParticlesWide:
                 const double yval = bits_to_double(ybits);
                 const int px = roundDouble(xval);
                 const int py = roundDouble(yval);
-
-                particle_base_buffer[idx] =
+                
+                buffer_idx_1D[idx] =
                     (long)px * (long)IszY * (long)Nfr + (long)py * (long)Nfr + (long)k;
             } else {
-                particle_base_buffer[idx] = 0;
+                buffer_idx_1D[idx] = 0;
             }
         }
     }
 }
 
-void load_pixels(const long particle_base_buffer[N_BUFFER_SIZE],
-                 const int buffer_obj_offsets[MAX_COUNT_ONES],
+void load_pixels(const long buffer_idx_1D[N_BUFFER_SIZE],
+                 const int buffer_objxy_offset[MAX_COUNT_ONES],
                  int countOnes,
                  long max_size,
                  const int* I,
                  int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
                  int tileSize) {
-#pragma HLS INLINE
+    #pragma HLS INLINE
 
     int x = 0;
     int y = 0;
 
-loadPixels:
-    for (int iter = 0; iter < tileSize * countOnes; iter++) {
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_TRIPCOUNT min=1 max=5120
-        long idx = absLong(particle_base_buffer[x] + (long)buffer_obj_offsets[y]);
+    loadPixels: for (int iter = 0; iter < tileSize * countOnes; iter++) {
+        #pragma HLS PIPELINE II=1
+        #pragma HLS LOOP_TRIPCOUNT min=1 max=5120
 
+        long idx = absLong(buffer_idx_1D[x] + (long)buffer_objxy_offset[y]);
         if (idx >= max_size) {
             idx = 0;
         }
 
         buffer_pixels[x][y] = I[idx];
-
         y++;
         if (y == countOnes) {
             y = 0;
@@ -157,48 +151,42 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
                         int countOnes,
                         double buffer_likelihood[N_BUFFER_SIZE],
                         int tileSize) {
-#pragma HLS INLINE
-
+    
+    #pragma HLS INLINE
     const double inv_count = 1.0 / (double)countOnes;
     const double scale = (kPixelScaleNum / kPixelDen) * inv_count;
     const double bias = kPixelBiasNum / kPixelDen;
 
-computeParticles:
-    for (int x = 0; x < tileSize; x++) {
-#pragma HLS LOOP_TRIPCOUNT min=1 max=64
-#pragma HLS LOOP_FLATTEN off
-        int partial_sum[POINT_PAR];
-#pragma HLS ARRAY_PARTITION variable=partial_sum complete dim=1
+    computeParticles: for (int x = 0; x < N_BUFFER_SIZE; x++) {
+        if (x < tileSize){
+            int partial_sum[PIX_SUM_LANES];
+            #pragma HLS ARRAY_PARTITION variable=partial_sum complete dim=1
 
-    initPartialSums:
-        for (int lane = 0; lane < POINT_PAR; lane++) {
-#pragma HLS UNROLL
-            partial_sum[lane] = 0;
-        }
+            initPartialSums: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
+                #pragma HLS UNROLL
+                partial_sum[lane] = 0;
+            }
 
-    accumuPoints:
-        for (int group = 0; group < POINT_GROUPS; group++) {
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_TRIPCOUNT min=20 max=20
-            const int base_idx = group * POINT_PAR;
-        accumulateLanes:
-            for (int lane = 0; lane < POINT_PAR; lane++) {
-#pragma HLS UNROLL
-                const int idx = base_idx + lane;
-                if (idx < countOnes) {
-                    partial_sum[lane] += buffer_pixels[x][idx];
+            accumPixels: for (int chunk = 0; chunk < PIX_CHUNKS; chunk++) {
+                #pragma HLS PIPELINE II=1
+                const int chunk_idx = chunk * PIX_SUM_LANES;
+                accumulateLanes: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
+                    #pragma HLS UNROLL
+                    const int idx = chunk_idx + lane;
+                    if (idx < countOnes) {
+                        partial_sum[lane] += buffer_pixels[x][idx];
+                    }
                 }
             }
-        }
 
-        int pixel_sum = 0;
-    sumPartialSums:
-        for (int lane = 0; lane < POINT_PAR; lane++) {
-#pragma HLS UNROLL
-            pixel_sum += partial_sum[lane];
-        }
+            int pixel_sum = 0;
+            sumPartialSums: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
+                #pragma HLS UNROLL
+                pixel_sum += partial_sum[lane];
+            }
 
-        buffer_likelihood[x] = scale * (double)pixel_sum - bias;
+            buffer_likelihood[x] = scale * (double)pixel_sum - bias;
+        }
     }
 }
 
@@ -206,25 +194,23 @@ void store_likelihood(wide_t* likelihood,
                       const double buffer_likelihood[N_BUFFER_SIZE],
                       int base,
                       int tileSize) {
-#pragma HLS INLINE
+    #pragma HLS INLINE
 
     const int base_word = base / DOUBLES_PER_WORD;
     const int full_words = tileSize / DOUBLES_PER_WORD;
     const int remainder = tileSize % DOUBLES_PER_WORD;
 
-storeLikelihoodWide:
-    for (int w = 0; w < WORDS_PER_TILE; w++) {
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_TRIPCOUNT min=8 max=8
+    storeLikelihoodWide: for (int w = 0; w < WORDS_PER_TILE; w++) {
+        #pragma HLS PIPELINE II=1
+        #pragma HLS LOOP_TRIPCOUNT min=8 max=8
+
         const bool write_word =
             (w < full_words) || ((w == full_words) && (remainder != 0));
 
         if (write_word) {
             wide_t out_pack = 0;
-
-        packWord:
-            for (int d = 0; d < DOUBLES_PER_WORD; d++) {
-#pragma HLS UNROLL
+            packWord: for (int d = 0; d < DOUBLES_PER_WORD; d++) {
+                #pragma HLS UNROLL
                 uint64_t bits = 0;
                 const int idx = w * DOUBLES_PER_WORD + d;
                 if (idx < tileSize) {
@@ -270,18 +256,18 @@ void likelihood_kernel(int Nparticles,
 #pragma HLS INTERFACE s_axilite port=return bundle=control
 
     int buffer_objxy[MAX_COUNT_ONES * 2];
-    int buffer_obj_offsets[MAX_COUNT_ONES];
-    long particle_base_buffer[N_BUFFER_SIZE];
+    int buffer_objxy_offset[MAX_COUNT_ONES];
+    long buffer_idx_1D[N_BUFFER_SIZE];
     int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES];
     double buffer_likelihood[N_BUFFER_SIZE];
 
-#pragma HLS ARRAY_PARTITION variable=buffer_obj_offsets cyclic factor=4 dim=1
-#pragma HLS ARRAY_PARTITION variable=particle_base_buffer cyclic factor=8 dim=1
+#pragma HLS ARRAY_PARTITION variable=buffer_objxy_offset cyclic factor=4 dim=1
+#pragma HLS ARRAY_PARTITION variable=buffer_idx_1D cyclic factor=8 dim=1
 #pragma HLS ARRAY_PARTITION variable=buffer_pixels cyclic factor=4 dim=2
 #pragma HLS ARRAY_PARTITION variable=buffer_likelihood cyclic factor=8 dim=1
 
     load_objxy(objxy, buffer_objxy, countOnes);
-    build_obj_offsets(buffer_objxy, buffer_obj_offsets, countOnes, IszY, Nfr);
+    build_obj_offsets(buffer_objxy, buffer_objxy_offset, countOnes, IszY, Nfr);
 
 Particle_loop:
     for (int base = 0; base < Nparticles; base += N_BUFFER_SIZE) {
@@ -292,9 +278,8 @@ Particle_loop:
             tileSize = N_BUFFER_SIZE;
         }
 
-        load_particles(arrayX, arrayY, particle_base_buffer, base, tileSize, IszY, Nfr, k);
-        load_pixels(particle_base_buffer, buffer_obj_offsets, countOnes, max_size, I, buffer_pixels,
-                    tileSize);
+        load_particles(arrayX, arrayY, buffer_idx_1D, base, tileSize, IszY, Nfr, k);
+        load_pixels(buffer_idx_1D, buffer_objxy_offset, countOnes, max_size, I, buffer_pixels, tileSize);
         compute_likelihood(buffer_pixels, countOnes, buffer_likelihood, tileSize);
         store_likelihood(likelihood, buffer_likelihood, base, tileSize);
     }
