@@ -53,20 +53,19 @@ LINK_OUTPUT := $(BUILD_DIR)/likelihood_krl.link.xclbin
 PACKAGE_OUT = ./package.$(TARGET)
 
 VPP_PFLAGS :=
-CMD_ARGS = $(BUILD_DIR)/likelihood_krl.xclbin --verify
+CMD_ARGS = $(BUILD_DIR)/likelihood_krl.xclbin
 CXXFLAGS += -I$(XILINX_XRT)/include -I$(XILINX_VIVADO)/include -I/usr/include/x86_64-linux-gnu -Wall -O0 -g -std=c++1y
 LDFLAGS += -L$(XILINX_XRT)/lib -pthread -lOpenCL
 
 ########################## Checking if PLATFORM in allowlist #######################
 PLATFORM_BLOCKLIST += nodma
 ############################## Setting up Host Variables ##############################
-CXXFLAGS += -I$(XF_PROJ_ROOT)/common/includes/xcl2
-HOST_SRCS += $(XF_PROJ_ROOT)/common/includes/xcl2/xcl2.cpp ./host.cpp
+HOST_SRCS += ./host.cpp
 CXXFLAGS += -fmessage-length=0
 LDFLAGS += -lrt -lstdc++
 
 ############################## Setting up Kernel Variables ##############################
-VPP_FLAGS += -t $(TARGET) --platform $(PLATFORM) --save-temps
+VPP_FLAGS += -t $(TARGET) --platform $(PLATFORM) --save-temps -I/usr/include/x86_64-linux-gnu
 
 EXECUTABLE = ./likelihood
 EMCONFIG_DIR = $(TEMP_DIR)
