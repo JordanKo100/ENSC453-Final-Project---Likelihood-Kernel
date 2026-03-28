@@ -36,13 +36,13 @@ void load_particles(const double* arrayX,
 		    double buffer_X[N_BUFFER_SIZE], 
 		    double buffer_Y[N_BUFFER_SIZE],
 		    int base,
-		    int tileSize){
+		    int activeParticles){
 
 	#pragma HLS INLINE
 	loadParticles: for (int x = 0; x < N_BUFFER_SIZE; x++) {
 		#pragma HLS PIPELINE II=1
 
-		if (x < tileSize){
+		if (x < activeParticles){
 			buffer_X[x] = arrayX[base + x];
 			buffer_Y[x] = arrayY[base + x];
 		}
@@ -60,7 +60,7 @@ void compute_likelihood(const double buffer_X[N_BUFFER_SIZE],
 			long max_size,
 			const int* I, 
 			double buffer_likelihood[N_BUFFER_SIZE],
-			int tileSize){
+			int activeParticles){
 
 #pragma HLS INLINE
 	const double inv_count = 1.0 / (double)countOnes;
@@ -69,7 +69,7 @@ void compute_likelihood(const double buffer_X[N_BUFFER_SIZE],
 	int ind_buffer[MAX_COUNT_ONES];
 
 		computeLikelihood:
-	    		for (int x = 0; x < tileSize; x++) {
+	    		for (int x = 0; x < activeParticles; x++) {
 #pragma HLS LOOP_TRIPCOUNT min=64 max=64
 			int px = roundDouble(buffer_X[x]);
 			int py = roundDouble(buffer_Y[x]);
@@ -103,13 +103,13 @@ void compute_likelihood(const double buffer_X[N_BUFFER_SIZE],
 void store_likelihood(double* likelihood,
 		      const double buffer_likelihood[N_BUFFER_SIZE],
 		      int base,
-		      int tileSize) {
+		      int activeParticles) {
 
 	#pragma HLS INLINE
 	storeLikelihood: for (int x = 0; x < N_BUFFER_SIZE; x++) {
 		#pragma HLS PIPELINE II=1
 		
-		if (x < tileSize){
+		if (x < activeParticles){
 			likelihood[base + x] = buffer_likelihood[x];
 		}
 	}
@@ -162,17 +162,17 @@ void likelihood_kernel(int Nparticles,
 			for (int base = 0; base < Nparticles; base += N_BUFFER_SIZE) {
 #pragma HLS LOOP_TRIPCOUNT min=1 max=32
 #pragma HLS LOOP_FLATTEN off
-				int tileSize = N_BUFFER_SIZE;
 
-			if (base + N_BUFFER_SIZE > Nparticles) {
-				tileSize = Nparticles - base;
-			}
+        int activeParticles = Nparticles - base;
+        if (activeParticles > N_BUFFER_SIZE) {
+            activeParticles = N_BUFFER_SIZE;
+        }
 
-		load_particles(arrayX, arrayY, buffer_X, buffer_Y, base, tileSize);
+		load_particles(arrayX, arrayY, buffer_X, buffer_Y, base, activeParticles);
 
-		compute_likelihood(buffer_X, buffer_Y, buffer_objxy, countOnes, IszY, Nfr, k, max_size, I, buffer_likelihood, tileSize);
+		compute_likelihood(buffer_X, buffer_Y, buffer_objxy, countOnes, IszY, Nfr, k, max_size, I, buffer_likelihood, activeParticles);
 
-		store_likelihood(likelihood, buffer_likelihood, base, tileSize);
+		store_likelihood(likelihood, buffer_likelihood, base, activeParticles);
 		}
 	}
 }

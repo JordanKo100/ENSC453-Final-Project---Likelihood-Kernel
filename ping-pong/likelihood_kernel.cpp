@@ -98,14 +98,14 @@ void load_particles(const wide_t* arrayX,
                     const wide_t* arrayY,
                     long buffer_idx_1D[N_BUFFER_SIZE],
                     int base,
-                    int tileSize,
+                    int activeParticles,
                     int IszY,
                     int Nfr,
                     int k) {
     #pragma HLS INLINE
 
     const int base_word = base / DOUBLES_PER_WORD;
-    const int valid_words = (tileSize + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
+    const int valid_words = (activeParticles + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
 
     loadParticlesWide: for (int w = 0; w < WORDS_PER_TILE; w++) {
         #pragma HLS PIPELINE II=1
@@ -120,7 +120,7 @@ void load_particles(const wide_t* arrayX,
         unpackWord: for (int d = 0; d < DOUBLES_PER_WORD; d++) {
             #pragma HLS UNROLL
             const int idx = w * DOUBLES_PER_WORD + d;
-            if (idx < tileSize) {
+            if (idx < activeParticles) {
                 const uint64_t xbits =
                     (uint64_t)xpack.range((d + 1) * DOUBLE_BITS - 1, d * DOUBLE_BITS);
                 const uint64_t ybits =
@@ -145,13 +145,13 @@ void load_pixels(const long buffer_idx_1D[N_BUFFER_SIZE],
                  long max_size,
                  const int* I,
                  int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
-                 int tileSize) {
+                 int activeParticles) {
     #pragma HLS INLINE
 
     int x = 0;
     int y = 0;
 
-    loadPixels: for (int iter = 0; iter < tileSize * countOnes; iter++) {
+    loadPixels: for (int iter = 0; iter < activeParticles * countOnes; iter++) {
         #pragma HLS PIPELINE II=1
         #pragma HLS LOOP_TRIPCOUNT min=1 max=5120
 
@@ -175,7 +175,7 @@ void load_pixels(const long buffer_idx_1D[N_BUFFER_SIZE],
 void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
                         int countOnes,
                         double buffer_likelihood[N_BUFFER_SIZE],
-                        int tileSize) {
+                        int activeParticles) {
     
     #pragma HLS INLINE
     const double inv_count = 1.0 / (double)countOnes;
@@ -184,7 +184,7 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
 
     computeParticles: for (int x = 0; x < N_BUFFER_SIZE; x++) {
         #pragma HLS PIPELINE II=1
-        if (x < tileSize){
+        if (x < activeParticles){
             int partial_sum[PIX_SUM_LANES];
             #pragma HLS ARRAY_PARTITION variable=partial_sum complete dim=1
 
@@ -218,12 +218,12 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
 void store_likelihood(wide_t* likelihood,
                       const double buffer_likelihood[N_BUFFER_SIZE],
                       int base,
-                      int tileSize) {
+                      int activeParticles) {
     #pragma HLS INLINE
 
     const int base_word = base / DOUBLES_PER_WORD;
-    const int full_words = tileSize / DOUBLES_PER_WORD;
-    const int remainder = tileSize % DOUBLES_PER_WORD;
+    const int full_words = activeParticles / DOUBLES_PER_WORD;
+    const int remainder = activeParticles % DOUBLES_PER_WORD;
 
     storeLikelihoodWide: for (int w = 0; w < WORDS_PER_TILE; w++) {
         #pragma HLS PIPELINE II=1
@@ -238,7 +238,7 @@ void store_likelihood(wide_t* likelihood,
                 #pragma HLS UNROLL
                 uint64_t bits = 0;
                 const int idx = w * DOUBLES_PER_WORD + d;
-                if (idx < tileSize) {
+                if (idx < activeParticles) {
                     bits = double_to_bits(buffer_likelihood[idx]);
                 }
                 out_pack.range((d + 1) * DOUBLE_BITS - 1, d * DOUBLE_BITS) = bits;
@@ -251,7 +251,7 @@ void store_likelihood(wide_t* likelihood,
 
 void process_tile(const wide_t* arrayX, const wide_t* arrayY, const int* I, 
                   const int buffer_objxy_offset[MAX_COUNT_ONES], wide_t* likelihood,
-                  int base, int tileSize, int countOnes, long max_size, 
+                  int base, int activeParticles, int countOnes, long max_size, 
                   int IszY, int Nfr, int k) {
     
     #pragma HLS DATAFLOW
@@ -267,10 +267,10 @@ void process_tile(const wide_t* arrayX, const wide_t* arrayY, const int* I,
     // partition for likelihood computation
     #pragma HLS ARRAY_PARTITION variable=buffer_pixels complete dim=2
 
-    load_particles(arrayX, arrayY, buffer_idx_1D, base, tileSize, IszY, Nfr, k);
-    load_pixels(buffer_idx_1D, buffer_objxy_offset, countOnes, max_size, I, buffer_pixels, tileSize);
-    compute_likelihood(buffer_pixels, countOnes, buffer_likelihood, tileSize);
-    store_likelihood(likelihood, buffer_likelihood, base, tileSize);
+    load_particles(arrayX, arrayY, buffer_idx_1D, base, activeParticles, IszY, Nfr, k);
+    load_pixels(buffer_idx_1D, buffer_objxy_offset, countOnes, max_size, I, buffer_pixels, activeParticles);
+    compute_likelihood(buffer_pixels, countOnes, buffer_likelihood, activeParticles);
+    store_likelihood(likelihood, buffer_likelihood, base, activeParticles);
 }
 
 extern "C" {
@@ -321,13 +321,13 @@ Particle_loop: for (int base = 0; base < Nparticles; base += N_BUFFER_SIZE) {
     #pragma HLS LOOP_TRIPCOUNT min=1 max=32 // max is calculated as the maximum Nparticles / N_BUFFER_SIZE (i.e. max Nparticles = 64 * 32 = 2048 particles)
     #pragma HLS LOOP_FLATTEN off
 
-        int tileSize = Nparticles - base;
-        if (tileSize > N_BUFFER_SIZE) {
-            tileSize = N_BUFFER_SIZE;
+        int activeParticles = Nparticles - base;
+        if (activeParticles > N_BUFFER_SIZE) {
+            activeParticles = N_BUFFER_SIZE;
         }
 
         process_tile(arrayX, arrayY, I, buffer_objxy_offset, likelihood, 
-                            base, tileSize, countOnes, max_size, IszY, Nfr, k);
+                            base, activeParticles, countOnes, max_size, IszY, Nfr, k);
     }
 }
 }
