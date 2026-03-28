@@ -11,7 +11,6 @@
 #define TB_NFR 3
 #define TB_K 1
 #define TB_MAX_SIZE 1000000
-#define TB_MAX_COUNTONES 80
 
 inline int tb_roundDouble(double value) {
     return static_cast<int>(value + ((value >= 0.0) ? 0.5 : -0.5));
@@ -202,13 +201,13 @@ bool run_case(const char* label,
 }
 
 int main() {
-    static double objxy[TB_MAX_COUNTONES * 2];
+    static double objxy[MAX_COUNT_ONES * 2];
     static int I[TB_MAX_SIZE];
 
     int countOnes = build_objxy_radius5(objxy);
-    if (countOnes > TB_MAX_COUNTONES) {
+    if (countOnes > MAX_COUNT_ONES) {
         std::cerr << "ERROR: countOnes = " << countOnes
-                  << " exceeds TB_MAX_COUNTONES = " << TB_MAX_COUNTONES << "\n";
+                  << " exceeds MAX_COUNT_ONES = " << MAX_COUNT_ONES << "\n";
         return 1;
     }
 
