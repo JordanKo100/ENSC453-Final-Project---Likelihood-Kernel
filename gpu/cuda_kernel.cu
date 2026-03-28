@@ -39,7 +39,7 @@ __device__ __forceinline__ int round_to_int_device(double value) {
 }
 
 // Baseline kernel with bounds handling.
-__global__ void likelihood_kernel_checked(
+__global__ void likelihood_kernel_baseline(
     int particleCount, int maskPointCount, int imageHeight, int frameCount, int currentFrame,
     long imageElementCount, double likelihoodScale, double likelihoodBias,
     const double* __restrict__ particleX, const double* __restrict__ particleY,
@@ -70,37 +70,7 @@ __global__ void likelihood_kernel_checked(
         likelihoodScale * static_cast<double>(neighborhoodPixelSum) - likelihoodBias;
 }
 
-// Specialized fixed-count accumulation used by the fast path.
-template <int MaskPointCount>
-__device__ __forceinline__ int accumulate_mask_pixels_fixed(
-    int particleBaseIndex, const int* __restrict__ imageData) {
-    int sum0 = 0;
-    int sum1 = 0;
-    int sum2 = 0;
-    int sum3 = 0;
-    const int unrolledEnd = (MaskPointCount / 4) * 4;
-
-#pragma unroll
-    for (int maskIndex = 0; maskIndex < unrolledEnd; maskIndex += 4) {
-        sum0 += load_image_cached(imageData + particleBaseIndex + g_maskOffsets[maskIndex + 0]);
-        sum1 += load_image_cached(imageData + particleBaseIndex + g_maskOffsets[maskIndex + 1]);
-        sum2 += load_image_cached(imageData + particleBaseIndex + g_maskOffsets[maskIndex + 2]);
-        sum3 += load_image_cached(imageData + particleBaseIndex + g_maskOffsets[maskIndex + 3]);
-    }
-
-    int neighborhoodPixelSum = sum0 + sum1 + sum2 + sum3;
-
-#pragma unroll
-    for (int maskIndex = unrolledEnd; maskIndex < MaskPointCount; maskIndex++) {
-        neighborhoodPixelSum +=
-            load_image_cached(imageData + particleBaseIndex + g_maskOffsets[maskIndex]);
-    }
-
-    return neighborhoodPixelSum;
-}
-
-template <int MaskPointCount>
-__global__ void likelihood_kernel_fast_fixed(
+__global__ void likelihood_kernel_fast_69(
     int particleCount, int planeStride, int frameCount, int currentFrame, double likelihoodScale,
     double likelihoodBias, const double* __restrict__ particleX,
     const double* __restrict__ particleY, const int* __restrict__ imageData,
@@ -114,8 +84,28 @@ __global__ void likelihood_kernel_fast_fixed(
     const int roundedParticleY = round_to_int_device(particleY[particleIndex]);
     const int particleBaseIndex = roundedParticleX * planeStride + roundedParticleY * frameCount +
                                   currentFrame;
-    const int neighborhoodPixelSum =
-        accumulate_mask_pixels_fixed<MaskPointCount>(particleBaseIndex, imageData);
+    int sum0 = 0;
+    int sum1 = 0;
+    int sum2 = 0;
+    int sum3 = 0;
+    const int unrolledEnd = (kSpecializedMaskPointCount / 4) * 4;
+
+#pragma unroll
+    for (int maskIndex = 0; maskIndex < unrolledEnd; maskIndex += 4) {
+        sum0 += load_image_cached(imageData + particleBaseIndex + g_maskOffsets[maskIndex + 0]);
+        sum1 += load_image_cached(imageData + particleBaseIndex + g_maskOffsets[maskIndex + 1]);
+        sum2 += load_image_cached(imageData + particleBaseIndex + g_maskOffsets[maskIndex + 2]);
+        sum3 += load_image_cached(imageData + particleBaseIndex + g_maskOffsets[maskIndex + 3]);
+    }
+
+    int neighborhoodPixelSum = sum0 + sum1 + sum2 + sum3;
+
+#pragma unroll
+    for (int maskIndex = unrolledEnd; maskIndex < kSpecializedMaskPointCount; maskIndex++) {
+        neighborhoodPixelSum +=
+            load_image_cached(imageData + particleBaseIndex + g_maskOffsets[maskIndex]);
+    }
+
     particleLikelihood[particleIndex] =
         likelihoodScale * static_cast<double>(neighborhoodPixelSum) - likelihoodBias;
 }
@@ -127,7 +117,7 @@ void check_cuda(cudaError_t status, const char* what) {
     }
 }
 
-bool can_use_specialized_fast_kernel(const BenchmarkConfig& cfg, const Dataset& data) {
+bool can_use_fast_69(const BenchmarkConfig& cfg, const Dataset& data) {
     if (data.countOnes != kSpecializedMaskPointCount) {
         return false;
     }
@@ -167,41 +157,6 @@ bool can_use_specialized_fast_kernel(const BenchmarkConfig& cfg, const Dataset& 
     return minImageIndex >= 0 && maxImageIndex < cfg.maxSize;
 }
 
-void launch_selected_kernel(
-    int gridSize, const BenchmarkConfig& cfg, const Dataset& data, int planeStride,
-    bool useSpecializedFastKernel, double likelihoodScale, double likelihoodBias,
-    const double* deviceParticleX, const double* deviceParticleY, const int* deviceImage,
-    double* deviceLikelihood) {
-    if (useSpecializedFastKernel) {
-        likelihood_kernel_fast_fixed<kSpecializedMaskPointCount><<<gridSize, cfg.blockSize>>>(
-            cfg.particles,
-            planeStride,
-            cfg.nfr,
-            cfg.frameIndex,
-            likelihoodScale,
-            likelihoodBias,
-            deviceParticleX,
-            deviceParticleY,
-            deviceImage,
-            deviceLikelihood);
-        return;
-    }
-
-    likelihood_kernel_checked<<<gridSize, cfg.blockSize>>>(
-        cfg.particles,
-        data.countOnes,
-        cfg.iszY,
-        cfg.nfr,
-        cfg.frameIndex,
-        cfg.maxSize,
-        likelihoodScale,
-        likelihoodBias,
-        deviceParticleX,
-        deviceParticleY,
-        deviceImage,
-        deviceLikelihood);
-}
-
 struct GpuRunResult {
     std::vector<double> likelihoodValues;
     double averageKernelMs;
@@ -216,7 +171,7 @@ GpuRunResult run_gpu_benchmark(const BenchmarkConfig& cfg, const Dataset& data) 
     const std::size_t imageArrayBytes = static_cast<std::size_t>(cfg.maxSize) * sizeof(int);
     const int gridSize = (cfg.particles + cfg.blockSize - 1) / cfg.blockSize;
     const int planeStride = cfg.iszY * cfg.nfr;
-    const bool useSpecializedFastKernel = can_use_specialized_fast_kernel(cfg, data);
+    const bool useFast69 = can_use_fast_69(cfg, data);
     const double likelihoodScale = likelihood_bench::pixel_scale(data.countOnes);
     const double likelihoodBias = likelihood_bench::pixel_bias();
 
@@ -257,35 +212,71 @@ GpuRunResult run_gpu_benchmark(const BenchmarkConfig& cfg, const Dataset& data) 
     check_cuda(cudaEventCreate(&startEvent), "cudaEventCreate start");
     check_cuda(cudaEventCreate(&stopEvent), "cudaEventCreate stop");
 
-    for (int iter = 0; iter < cfg.warmup; iter++) {
-        launch_selected_kernel(gridSize,
-                               cfg,
-                               data,
-                               planeStride,
-                               useSpecializedFastKernel,
-                               likelihoodScale,
-                               likelihoodBias,
-                               deviceParticleX,
-                               deviceParticleY,
-                               deviceImage,
-                               deviceLikelihood);
+    if (useFast69) {
+        for (int iter = 0; iter < cfg.warmup; iter++) {
+            likelihood_kernel_fast_69<<<gridSize, cfg.blockSize>>>(
+                cfg.particles,
+                planeStride,
+                cfg.nfr,
+                cfg.frameIndex,
+                likelihoodScale,
+                likelihoodBias,
+                deviceParticleX,
+                deviceParticleY,
+                deviceImage,
+                deviceLikelihood);
+        }
+    } else {
+        for (int iter = 0; iter < cfg.warmup; iter++) {
+            likelihood_kernel_baseline<<<gridSize, cfg.blockSize>>>(
+                cfg.particles,
+                data.countOnes,
+                cfg.iszY,
+                cfg.nfr,
+                cfg.frameIndex,
+                cfg.maxSize,
+                likelihoodScale,
+                likelihoodBias,
+                deviceParticleX,
+                deviceParticleY,
+                deviceImage,
+                deviceLikelihood);
+        }
     }
     check_cuda(cudaGetLastError(), "kernel warmup launch");
     check_cuda(cudaDeviceSynchronize(), "cudaDeviceSynchronize warmup");
 
     check_cuda(cudaEventRecord(startEvent), "cudaEventRecord start");
-    for (int iter = 0; iter < cfg.iters; iter++) {
-        launch_selected_kernel(gridSize,
-                               cfg,
-                               data,
-                               planeStride,
-                               useSpecializedFastKernel,
-                               likelihoodScale,
-                               likelihoodBias,
-                               deviceParticleX,
-                               deviceParticleY,
-                               deviceImage,
-                               deviceLikelihood);
+    if (useFast69) {
+        for (int iter = 0; iter < cfg.iters; iter++) {
+            likelihood_kernel_fast_69<<<gridSize, cfg.blockSize>>>(
+                cfg.particles,
+                planeStride,
+                cfg.nfr,
+                cfg.frameIndex,
+                likelihoodScale,
+                likelihoodBias,
+                deviceParticleX,
+                deviceParticleY,
+                deviceImage,
+                deviceLikelihood);
+        }
+    } else {
+        for (int iter = 0; iter < cfg.iters; iter++) {
+            likelihood_kernel_baseline<<<gridSize, cfg.blockSize>>>(
+                cfg.particles,
+                data.countOnes,
+                cfg.iszY,
+                cfg.nfr,
+                cfg.frameIndex,
+                cfg.maxSize,
+                likelihoodScale,
+                likelihoodBias,
+                deviceParticleX,
+                deviceParticleY,
+                deviceImage,
+                deviceLikelihood);
+        }
     }
     check_cuda(cudaEventRecord(stopEvent), "cudaEventRecord stop");
     check_cuda(cudaGetLastError(), "kernel timed launch");
