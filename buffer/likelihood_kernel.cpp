@@ -1,5 +1,7 @@
 #include <cmath>
 #include <cstdlib>
+#include <cassert>
+
 #include "likelihood_kernel.h"
 
 // countOnes = number of points in the object mask/disk
@@ -144,6 +146,10 @@ void likelihood_kernel(int Nparticles,
 #pragma HLS INTERFACE s_axilite port=I bundle=control
 #pragma HLS INTERFACE s_axilite port=likelihood bundle=control
 #pragma HLS INTERFACE s_axilite port=return bundle=control
+
+    assert(countOnes > 0 && "countOnes must be greater than 0");
+    assert(countOnes <= MAX_COUNT_ONES && "countOnes exceeds statically allocated MAX_COUNT_ONES!");
+    assert(Nparticles > 0 && "Nparticles must be greater than 0");
 
 	int buffer_objxy[MAX_COUNT_ONES * 2];
 	double buffer_X[N_BUFFER_SIZE];

@@ -1,6 +1,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <stdint.h>
+#include <cassert>
 
 #include "likelihood_kernel.h"
 
@@ -87,6 +88,9 @@ void load_pixels(const long buffer_idx_1D[N_BUFFER_SIZE],
     loadPixels: for (int iter = 0; iter < tileSize * countOnes; iter++) {
         #pragma HLS PIPELINE II=1
         #pragma HLS LOOP_TRIPCOUNT min=1 max=5120
+
+        assert(x >= 0 && x < N_BUFFER_SIZE && "load_pixels: x index out of bounds!");
+        assert(y >= 0 && y < MAX_COUNT_ONES && "load_pixels: y index out of bounds!");
 
         long idx = absLong(buffer_idx_1D[x] + (long)buffer_objxy_offset[y]);
         if (idx >= max_size) {
@@ -189,6 +193,10 @@ void likelihood_kernel(int Nparticles,
 #pragma HLS INTERFACE s_axilite port=I bundle=control
 #pragma HLS INTERFACE s_axilite port=likelihood bundle=control
 #pragma HLS INTERFACE s_axilite port=return bundle=control
+
+    assert(countOnes > 0 && "countOnes must be greater than 0");
+    assert(countOnes <= MAX_COUNT_ONES && "countOnes exceeds statically allocated MAX_COUNT_ONES!");
+    assert(Nparticles > 0 && "Nparticles must be greater than 0");
 
     int buffer_objxy[MAX_COUNT_ONES * 2];
     int buffer_objxy_offset[MAX_COUNT_ONES];
