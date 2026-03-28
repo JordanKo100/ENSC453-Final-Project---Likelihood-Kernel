@@ -6,21 +6,6 @@
 
 #include "likelihood_kernel.h"
 
-#define MAX_COUNT_ONES 80 // MASK SIZE
-#define N_BUFFER_SIZE 64
-
-// Pre-calculate the number of wide words needed for loading particles and storing likelihood  
-#define WORDS_PER_TILE (N_BUFFER_SIZE / DOUBLES_PER_WORD)
-
-// Pre-calculate the maximum number of wide words needed for objxy
-#define OBJ_PER_TILE ((MAX_COUNT_ONES * 2) / DOUBLES_PER_WORD) 
-
-const int PIX_SUM_LANES = 10;
-const int PIX_CHUNKS = (MAX_COUNT_ONES / PIX_SUM_LANES);
-
-static_assert(N_BUFFER_SIZE % WORDS_PER_TILE == 0, "N_BUFFER_SIZE must be strictly divisible by 8 to align with 512-bit AXI ports!");
-static_assert(MAX_COUNT_ONES % PIX_SUM_LANES == 0, "MAX_COUNT_ONES must be perfectly divisible by PIX_SUM_LANES!");
-
 static const double kPixelScaleNum = 256.0;
 static const double kPixelBiasNum = 41984.0;
 static const double kPixelDen = 50.0;
@@ -157,9 +142,6 @@ void load_pixels(const long buffer_idx_1D[N_BUFFER_SIZE],
     loadPixels: for (int iter = 0; iter < activeParticles * countOnes; iter++) {
         #pragma HLS PIPELINE II=1
         #pragma HLS LOOP_TRIPCOUNT min=1 max=5120
-
-        assert(x >= 0 && x < N_BUFFER_SIZE && "load_pixels: x index out of bounds!");
-        assert(y >= 0 && y < MAX_COUNT_ONES && "load_pixels: y index out of bounds!");
 
         long idx = absLong(buffer_idx_1D[x] + (long)buffer_objxy_offset[y]);
         if (idx >= max_size) {
