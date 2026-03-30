@@ -26,7 +26,6 @@ constexpr int kFrameIndex = 0;
 template <typename T>
 struct aligned_allocator {
     using value_type = T;
-
     T* allocate(std::size_t num) {
         void* ptr = nullptr;
         if (posix_memalign(&ptr, 4096, num * sizeof(T)) != 0) {
@@ -113,12 +112,10 @@ double checksum_wide(const std::vector<wide_t, aligned_allocator<wide_t>>& in,
     return sum;
 }
 
-// Automatically builds the square mask based on the header's GLOBAL_MASK_LENGTH
 int build_objxy_square(std::vector<double, aligned_allocator<double>>& objxy) {
     const int center = (GLOBAL_MASK_LENGTH - 1) / 2;
     int countOnes = GLOBAL_MASK_LENGTH * GLOBAL_MASK_LENGTH;
     int current_point = 0;
-    
     for (int x = 0; x < GLOBAL_MASK_LENGTH; x++) {
         for (int y = 0; y < GLOBAL_MASK_LENGTH; y++) {
             objxy[current_point * 2] = static_cast<double>(y - center);
@@ -142,17 +139,23 @@ void init_particles_boundary(std::vector<double>& arrayX,
     for (std::size_t i = 0; i < arrayX.size(); i++) {
         switch (i % 6) {
         case 0:
-            arrayX[i] = -3.6; arrayY[i] = -1.8; break;
+            arrayX[i] = -3.6;
+            arrayY[i] = -1.8; break;
         case 1:
-            arrayX[i] = 0.2; arrayY[i] = 479.7; break;
+            arrayX[i] = 0.2;
+            arrayY[i] = 479.7; break;
         case 2:
-            arrayX[i] = 4800.0 + static_cast<double>(i); arrayY[i] = 470.4; break;
+            arrayX[i] = 4800.0 + static_cast<double>(i);
+            arrayY[i] = 470.4; break;
         case 3:
-            arrayX[i] = 1.2; arrayY[i] = -4.7; break;
+            arrayX[i] = 1.2;
+            arrayY[i] = -4.7; break;
         case 4:
-            arrayX[i] = 100000.0 + static_cast<double>(i * 11); arrayY[i] = 100000.0 - static_cast<double>(i * 7); break;
+            arrayX[i] = 100000.0 + static_cast<double>(i * 11);
+            arrayY[i] = 100000.0 - static_cast<double>(i * 7); break;
         default:
-            arrayX[i] = 82.0 + static_cast<double>(i % 9) * 2.4; arrayY[i] = 118.0 + static_cast<double>(i % 11) * 1.6; break;
+            arrayX[i] = 82.0 + static_cast<double>(i % 9) * 2.4;
+            arrayY[i] = 118.0 + static_cast<double>(i % 11) * 1.6; break;
         }
     }
 }
@@ -227,13 +230,10 @@ cl::Device pick_device() {
 OpenClSession open_session(const std::string& binary_file) {
     const cl::Device device = pick_device();
     cl_int err = CL_SUCCESS;
-    
     cl::Context context(device, nullptr, nullptr, nullptr, &err);
     if (err != CL_SUCCESS) throw std::runtime_error("Failed to create OpenCL context");
-
     cl::CommandQueue queue(context, device, CL_QUEUE_PROFILING_ENABLE, &err);
     if (err != CL_SUCCESS) throw std::runtime_error("Failed to create command queue");
-
     const std::vector<unsigned char> file_buf = read_binary_file(binary_file);
     cl::Program::Binaries bins;
     bins.push_back({file_buf.data(), file_buf.size()});
@@ -244,15 +244,16 @@ OpenClSession open_session(const std::string& binary_file) {
     cl::Kernel kernel(program, "likelihood_kernel", &err);
     if (err != CL_SUCCESS) throw std::runtime_error("Failed to create likelihood_kernel");
 
-    std::cout << "[INFO] Using device: " << device.getInfo<CL_DEVICE_NAME>() << "\n";
+    std::cout << "\n======================================================\n";
+    std::cout << "[INFO] FPGA Device Initialized: " << device.getInfo<CL_DEVICE_NAME>() << "\n";
+    std::cout << "======================================================\n\n";
     return {context, queue, kernel};
 }
 
 bool run_case(OpenClSession& session,
               const char* label,
               int particle_count,
-              bool boundary_case,
-              bool verify) {
+              bool boundary_case) {
     std::vector<double> arrayX(static_cast<std::size_t>(particle_count), 0.0);
     std::vector<double> arrayY(static_cast<std::size_t>(particle_count), 0.0);
     std::vector<double, aligned_allocator<double>> objxy(MAX_COUNT_ONES * 2, 0.0);
@@ -270,10 +271,9 @@ bool run_case(OpenClSession& session,
     }
     init_image(image);
 
+    // ALWAYS compute reference
     std::vector<double> likelihood_ref;
-    if (verify) {
-        compute_reference(arrayX, arrayY, objxy, image, countOnes, likelihood_ref);
-    }
+    compute_reference(arrayX, arrayY, objxy, image, countOnes, likelihood_ref);
 
     const std::size_t particle_words = (arrayX.size() + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
 
@@ -283,11 +283,6 @@ bool run_case(OpenClSession& session,
 
     pack_doubles_to_wide(arrayX, arrayX_wide);
     pack_doubles_to_wide(arrayY, arrayY_wide);
-
-    if (!verify) {
-        std::vector<double>().swap(arrayX);
-        std::vector<double>().swap(arrayY);
-    }
 
     cl_int err = CL_SUCCESS;
     cl::Buffer buf_arrayX(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(wide_t) * particle_words, arrayX_wide.data(), &err);
@@ -302,7 +297,7 @@ bool run_case(OpenClSession& session,
     err |= session.kernel.setArg(2, GLOBAL_ISZY);
     err |= session.kernel.setArg(3, kNfr);
     err |= session.kernel.setArg(4, kFrameIndex);
-    err |= session.kernel.setArg(5, GLOBAL_MAX_SIZE);
+    err |= session.kernel.setArg(5, (cl_long)GLOBAL_MAX_SIZE);
     err |= session.kernel.setArg(6, buf_arrayX);
     err |= session.kernel.setArg(7, buf_arrayY);
     err |= session.kernel.setArg(8, buf_objxy);
@@ -323,16 +318,11 @@ bool run_case(OpenClSession& session,
     const timespec kernel_elapsed = diff(kernel_start, kernel_end);
     const double kernel_ms = static_cast<double>(kernel_elapsed.tv_sec) * 1.0e3 +
                              static_cast<double>(kernel_elapsed.tv_nsec) * 1.0e-6;
-    std::cout << "[" << label << "] kernel time = " << std::fixed << std::setprecision(3) << kernel_ms << " ms\n";
 
     err = session.queue.enqueueMigrateMemObjects({buf_likelihood}, CL_MIGRATE_MEM_OBJECT_HOST);
     err |= session.queue.finish();
 
-    if (!verify) {
-        std::cout << "[" << label << "] likelihood checksum = " << std::setprecision(15) << checksum_wide(likelihood_wide, static_cast<std::size_t>(particle_count)) << "\n";
-        return true;
-    }
-
+    // Verify Results
     std::vector<double> likelihood_hw(static_cast<std::size_t>(particle_count), 0.0);
     unpack_wide_to_doubles(likelihood_wide, likelihood_hw);
 
@@ -345,43 +335,53 @@ bool run_case(OpenClSession& session,
         if (err_abs > max_abs_err) max_abs_err = err_abs;
         if (err_abs > tol) {
             pass = false;
-            std::cout << "[" << label << "] mismatch at particle " << i << ": hw=" << std::setprecision(15) << likelihood_hw[i] << ", ref=" << likelihood_ref[i] << ", abs_err=" << err_abs << "\n";
+            std::cout << "[ERROR] " << label << " mismatch at particle " << i << "\n"
+                      << "        HW = " << std::setprecision(15) << likelihood_hw[i] << "\n"
+                      << "       REF = " << likelihood_ref[i] << "\n"
+                      << "   ABS_ERR = " << err_abs << "\n";
             break;
         }
     }
 
-    std::cout << "[" << label << "] checksum = " << std::setprecision(15) << checksum_wide(likelihood_wide, static_cast<std::size_t>(particle_count)) << ", max abs error = " << max_abs_err << "\n";
+    std::cout << ">>> TEST: " << label << " (" << particle_count << " particles)\n";
+    std::cout << "    Compute Time  : " << std::fixed << std::setprecision(3) << kernel_ms << " ms\n";
+    std::cout << "    Max Abs Error : " << std::setprecision(15) << max_abs_err << "\n";
+    std::cout << "    Status        : " << (pass ? "PASS" : "FAIL") << "\n\n";
+
     return pass;
 }
 
 }  // namespace
 
 int main(int argc, char* argv[]) {
-    if (argc != 2 && argc != 3) {
-        std::cerr << "Usage: " << argv[0] << " <xclbin_path> [--verify]\n";
+    // Removed the confusing --verify logic. It just runs the checks by default now.
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " <xclbin_path>\n";
         return EXIT_FAILURE;
     }
 
-    const bool do_verify = (argc == 3 && std::string(argv[2]) == "--verify");
-
     try {
         OpenClSession session = open_session(argv[1]);
+        
+        bool pass = true;
+        // Run both interior and boundary cases automatically
+        pass &= run_case(session, "Interior_Points", GLOBAL_NUM_PARTICLES, false);
+        pass &= run_case(session, "Boundary_Points", GLOBAL_NUM_PARTICLES, true);
 
-        if (do_verify) {
-            bool pass = true;
-            pass &= run_case(session, "verify_interior", GLOBAL_NUM_PARTICLES, false, true);
-            pass &= run_case(session, "verify_boundary", GLOBAL_NUM_PARTICLES, true, true);
-            std::cout << (pass ? "TEST PASSED\n" : "TEST FAILED\n");
-            return pass ? EXIT_SUCCESS : EXIT_FAILURE;
-        }
-
-        if (!run_case(session, "hardware_run", GLOBAL_NUM_PARTICLES, false, false)) {
+        if (pass) {
+            std::cout << "======================================================\n";
+            std::cout << "  ALL HARDWARE VERIFICATION TESTS PASSED \n";
+            std::cout << "======================================================\n";
+            return EXIT_SUCCESS;
+        } else {
+            std::cout << "======================================================\n";
+            std::cout << "  HARDWARE VERIFICATION FAILED \n";
+            std::cout << "======================================================\n";
             return EXIT_FAILURE;
         }
-        return EXIT_SUCCESS;
 
     } catch (const std::exception& e) {
-        std::cerr << "[ERROR] " << e.what() << "\n";
+        std::cerr << "\n[CRITICAL ERROR] " << e.what() << "\n";
         return EXIT_FAILURE;
     }
 }
