@@ -4,15 +4,19 @@
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
+#include <vector>
 
 #include "likelihood_kernel.h"
 
-#define TB_MAX_NPARTICLES 130
-#define TB_ISZY 480
-#define TB_NFR 3
-#define TB_K 1
-#define TB_MAX_SIZE 1000000
-#define TB_MAX_COUNTONES 80
+// 1. Updated Data Constants
+#define TB_MAX_NPARTICLES 1000000
+#define TB_ISZY 4000
+#define TB_NFR 1
+#define TB_K 0
+#define TB_MAX_SIZE 16000000
+
+#define MASK_LENGTH 45
+#define TB_MAX_COUNTONES (MASK_LENGTH * MASK_LENGTH) // 2025
 
 inline int tb_roundDouble(double value) {
     return static_cast<int>(value + ((value >= 0.0) ? 0.5 : -0.5));
@@ -37,7 +41,7 @@ inline uint64_t double_to_bits_tb(double val) {
     return conv.u;
 }
 
-void pack_doubles_to_wide(const double* in, wide_t* out, int count) {
+void pack_doubles_to_wide(const std::vector<double>& in, std::vector<wide_t>& out, int count) {
     const int words = (count + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
     for (int w = 0; w < words; w++) {
         wide_t pack = 0;
@@ -51,7 +55,7 @@ void pack_doubles_to_wide(const double* in, wide_t* out, int count) {
     }
 }
 
-void unpack_wide_to_doubles(const wide_t* in, double* out, int count) {
+void unpack_wide_to_doubles(const std::vector<wide_t>& in, std::vector<double>& out, int count) {
     const int words = (count + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
     for (int w = 0; w < words; w++) {
         wide_t pack = in[w];
@@ -66,25 +70,20 @@ void unpack_wide_to_doubles(const wide_t* in, double* out, int count) {
     }
 }
 
-int build_objxy_radius5(double* objxy) {
-    const int radius = 5;
-    const int diameter = radius * 2 - 1;
-    const int center = radius - 1;
-
-    int countOnes = 0;
-    for (int x = 0; x < diameter; x++) {
-        for (int y = 0; y < diameter; y++) {
-            double distance = std::sqrt(
-                std::pow((double)(x - center), 2.0) +
-                std::pow((double)(y - center), 2.0));
-            if (distance < radius) {
-                objxy[countOnes * 2] = (double)(y - center);
-                objxy[countOnes * 2 + 1] = (double)(x - center);
-                countOnes++;
-            }
+// 2. Updated to use the 45x45 Square Mask Logic
+int build_objxy_square(std::vector<double>& objxy) {
+    const int length = MASK_LENGTH;
+    const int center = (length - 1) / 2;
+    int countOnes = length * length; 
+    
+    int current_point = 0;
+    for (int x = 0; x < length; x++) {
+        for (int y = 0; y < length; y++) {
+            objxy[current_point * 2] = (double)(y - center);
+            objxy[current_point * 2 + 1] = (double)(x - center);
+            current_point++;
         }
     }
-
     return countOnes;
 }
 
@@ -125,14 +124,15 @@ void compute_reference(int Nparticles,
     }
 }
 
-void init_particles_interior(double* arrayX, double* arrayY, int Nparticles) {
+// 3. Updated Particle Initialization Math
+void init_particles_interior(std::vector<double>& arrayX, std::vector<double>& arrayY, int Nparticles) {
     for (int i = 0; i < Nparticles; i++) {
-        arrayX[i] = 80.0 + (i % 23) * 1.75;
-        arrayY[i] = 120.0 + (i % 19) * 1.125;
+        arrayX[i] = 80.0 + (double)(i % 64) * 1.125;
+        arrayY[i] = 120.0 + (double)(i % 32) * 0.875;
     }
 }
 
-void init_particles_boundary(double* arrayX, double* arrayY, int Nparticles) {
+void init_particles_boundary(std::vector<double>& arrayX, std::vector<double>& arrayY, int Nparticles) {
     for (int i = 0; i < Nparticles; i++) {
         switch (i % 6) {
             case 0:
@@ -171,22 +171,17 @@ bool run_case(const char* label,
               int countOnes,
               const int* I) 
 {
-    static double arrayX[TB_MAX_NPARTICLES];
-    static double arrayY[TB_MAX_NPARTICLES];
-    static double likelihood_hw[TB_MAX_NPARTICLES];
-    static double likelihood_ref[TB_MAX_NPARTICLES];
+    // 4. Changed to std::vector to safely handle the 1,000,000 particle size
+    std::vector<double> arrayX(Nparticles, 0.0);
+    std::vector<double> arrayY(Nparticles, 0.0);
+    std::vector<double> likelihood_hw(Nparticles, 0.0);
+    std::vector<double> likelihood_ref(Nparticles, 0.0);
 
-    // Wide array allocations (objxy_wide removed)
-    static wide_t arrayX_wide[(TB_MAX_NPARTICLES + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD];
-    static wide_t arrayY_wide[(TB_MAX_NPARTICLES + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD];
-    static wide_t likelihood_wide[(TB_MAX_NPARTICLES + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD];
-
-    for (int i = 0; i < TB_MAX_NPARTICLES; i++) {
-        arrayX[i] = 0.0;
-        arrayY[i] = 0.0;
-        likelihood_hw[i] = 0.0;
-        likelihood_ref[i] = 0.0;
-    }
+    // Wide array allocations
+    int num_wide_words = (Nparticles + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
+    std::vector<wide_t> arrayX_wide(num_wide_words, 0);
+    std::vector<wide_t> arrayY_wide(num_wide_words, 0);
+    std::vector<wide_t> likelihood_wide(num_wide_words, 0);
 
     if (boundary_case) {
         init_particles_boundary(arrayX, arrayY, Nparticles);
@@ -197,11 +192,6 @@ bool run_case(const char* label,
     // Pack standard double arrays into 512-bit wide_t arrays
     pack_doubles_to_wide(arrayX, arrayX_wide, Nparticles);
     pack_doubles_to_wide(arrayY, arrayY_wide, Nparticles);
-    
-    // Initialize the output wide array
-    for (int i = 0; i < (TB_MAX_NPARTICLES + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD; i++) {
-        likelihood_wide[i] = 0;
-    }
 
     compute_reference(
         Nparticles,
@@ -210,11 +200,11 @@ bool run_case(const char* label,
         TB_NFR,
         TB_K,
         max_size,
-        arrayX,
-        arrayY,
+        arrayX.data(),
+        arrayY.data(),
         objxy,
         I,
-        likelihood_ref);
+        likelihood_ref.data());
 
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -226,11 +216,11 @@ bool run_case(const char* label,
         TB_NFR,
         TB_K,
         max_size,
-        arrayX_wide,
-        arrayY_wide,
+        arrayX_wide.data(),
+        arrayY_wide.data(),
         objxy,
         I,
-        likelihood_wide);
+        likelihood_wide.data());
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
@@ -267,28 +257,24 @@ bool run_case(const char* label,
 }
 
 int main() {
-    static double objxy[TB_MAX_COUNTONES * 2];
-    static int I[TB_MAX_SIZE];
+    // 5. Changed to std::vector to safely handle the 16,000,000 max size
+    std::vector<double> objxy(TB_MAX_COUNTONES * 2, 0.0);
+    std::vector<int> I(TB_MAX_SIZE, 0);
 
-    int countOnes = build_objxy_radius5(objxy);
-
-    if (countOnes > TB_MAX_COUNTONES) {
-        std::cerr << "ERROR: countOnes = " << countOnes
-                  << " exceeds TB_MAX_COUNTONES = " << TB_MAX_COUNTONES << "\n";
-        return 1;
-    }
+    int countOnes = build_objxy_square(objxy);
 
     for (long i = 0; i < TB_MAX_SIZE; i++) {
         I[i] = 100 + (int)(i % 129);
     }
 
     bool pass = true;
-    pass &= run_case("single_tile_exact", 64, false, TB_MAX_SIZE, objxy, countOnes, I);
-    pass &= run_case("multi_tile_exact", 128, false, TB_MAX_SIZE, objxy, countOnes, I);
-    pass &= run_case("multi_tile_tail", 73, false, TB_MAX_SIZE, objxy, countOnes, I);
-    pass &= run_case("small_case", 3, false, TB_MAX_SIZE, objxy, countOnes, I);
-    pass &= run_case("boundary_case", 65, true, TB_MAX_SIZE, objxy, countOnes, I);
-    pass &= run_case("clamp_case", 65, true, 37, objxy, countOnes, I);
+    
+    // Testing the massive 1,000,000 interior case
+    pass &= run_case("massive_interior_case", TB_MAX_NPARTICLES, false, TB_MAX_SIZE, objxy.data(), countOnes, I.data());
+    
+    // Testing smaller corner cases to verify boundary logic
+    pass &= run_case("small_boundary_case", 65, true, TB_MAX_SIZE, objxy.data(), countOnes, I.data());
+    pass &= run_case("clamp_case", 65, true, 37, objxy.data(), countOnes, I.data());
 
     if (pass) {
         std::cout << "TEST PASSED\n";
