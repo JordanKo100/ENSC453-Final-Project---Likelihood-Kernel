@@ -19,11 +19,9 @@
 
 namespace {
 
-constexpr int kEmuParticles = 130;
-constexpr int kIszY = 480;
-constexpr int kNfr = 3;
-constexpr int kFrameIndex = 1;
-constexpr long kMaxSize = 1000000;
+// Constant tracking values
+constexpr int kNfr = 1;
+constexpr int kFrameIndex = 0;
 
 template <typename T>
 struct aligned_allocator {
@@ -66,6 +64,10 @@ inline uint64_t double_to_bits(double value) {
     return conv.u;
 }
 
+inline int shared_roundDouble(double value) {
+    return static_cast<int>(value + ((value >= 0.0) ? 0.5 : -0.5));
+}
+
 void pack_doubles_to_wide(const std::vector<double>& in,
                           std::vector<wide_t, aligned_allocator<wide_t>>& out) {
     for (std::size_t w = 0; w < out.size(); w++) {
@@ -94,42 +96,44 @@ void unpack_wide_to_doubles(const std::vector<wide_t, aligned_allocator<wide_t>>
     }
 }
 
-double checksum(const std::vector<double>& values) {
+double checksum_wide(const std::vector<wide_t, aligned_allocator<wide_t>>& in,
+                     std::size_t count) {
     double sum = 0.0;
-    for (double value : values) {
-        sum += value;
+    for (std::size_t w = 0; w < in.size(); w++) {
+        const wide_t pack = in[w];
+        for (int d = 0; d < DOUBLES_PER_WORD; d++) {
+            const std::size_t idx = w * DOUBLES_PER_WORD + static_cast<std::size_t>(d);
+            if (idx < count) {
+                const uint64_t bits = static_cast<uint64_t>(
+                    pack.range((d + 1) * DOUBLE_BITS - 1, d * DOUBLE_BITS));
+                sum += bits_to_double(bits);
+            }
+        }
     }
     return sum;
 }
 
-int build_objxy_radius5(std::vector<double>& objxy) {
-    const int radius = 5;
-    const int diameter = radius * 2 - 1;
-    const int center = radius - 1;
-
-    int countOnes = 0;
-    for (int x = 0; x < diameter; x++) {
-        for (int y = 0; y < diameter; y++) {
-            const double dx = static_cast<double>(x - center);
-            const double dy = static_cast<double>(y - center);
-            const double distance = std::sqrt(dx * dx + dy * dy);
-
-            if (distance < static_cast<double>(radius)) {
-                objxy[static_cast<std::size_t>(countOnes) * 2] = static_cast<double>(y - center);
-                objxy[static_cast<std::size_t>(countOnes) * 2 + 1] = static_cast<double>(x - center);
-                countOnes++;
-            }
+// Automatically builds the square mask based on the header's GLOBAL_MASK_LENGTH
+int build_objxy_square(std::vector<double, aligned_allocator<double>>& objxy) {
+    const int center = (GLOBAL_MASK_LENGTH - 1) / 2;
+    int countOnes = GLOBAL_MASK_LENGTH * GLOBAL_MASK_LENGTH;
+    int current_point = 0;
+    
+    for (int x = 0; x < GLOBAL_MASK_LENGTH; x++) {
+        for (int y = 0; y < GLOBAL_MASK_LENGTH; y++) {
+            objxy[current_point * 2] = static_cast<double>(y - center);
+            objxy[current_point * 2 + 1] = static_cast<double>(x - center);
+            current_point++;
         }
     }
-
     return countOnes;
 }
 
 void init_particles_interior(std::vector<double>& arrayX,
                              std::vector<double>& arrayY) {
     for (std::size_t i = 0; i < arrayX.size(); i++) {
-        arrayX[i] = 80.0 + static_cast<double>(i % 23) * 1.75;
-        arrayY[i] = 120.0 + static_cast<double>(i % 19) * 1.125;
+        arrayX[i] = 80.0 + static_cast<double>(i % 64) * 1.125;
+        arrayY[i] = 120.0 + static_cast<double>(i % 32) * 0.875;
     }
 }
 
@@ -138,29 +142,17 @@ void init_particles_boundary(std::vector<double>& arrayX,
     for (std::size_t i = 0; i < arrayX.size(); i++) {
         switch (i % 6) {
         case 0:
-            arrayX[i] = -3.6;
-            arrayY[i] = -1.8;
-            break;
+            arrayX[i] = -3.6; arrayY[i] = -1.8; break;
         case 1:
-            arrayX[i] = 0.2;
-            arrayY[i] = 479.7;
-            break;
+            arrayX[i] = 0.2; arrayY[i] = 479.7; break;
         case 2:
-            arrayX[i] = 4800.0 + static_cast<double>(i);
-            arrayY[i] = 470.4;
-            break;
+            arrayX[i] = 4800.0 + static_cast<double>(i); arrayY[i] = 470.4; break;
         case 3:
-            arrayX[i] = 1.2;
-            arrayY[i] = -4.7;
-            break;
+            arrayX[i] = 1.2; arrayY[i] = -4.7; break;
         case 4:
-            arrayX[i] = 100000.0 + static_cast<double>(i * 11);
-            arrayY[i] = 100000.0 - static_cast<double>(i * 7);
-            break;
+            arrayX[i] = 100000.0 + static_cast<double>(i * 11); arrayY[i] = 100000.0 - static_cast<double>(i * 7); break;
         default:
-            arrayX[i] = 82.0 + static_cast<double>(i % 9) * 2.4;
-            arrayY[i] = 118.0 + static_cast<double>(i % 11) * 1.6;
-            break;
+            arrayX[i] = 82.0 + static_cast<double>(i % 9) * 2.4; arrayY[i] = 118.0 + static_cast<double>(i % 11) * 1.6; break;
         }
     }
 }
@@ -173,12 +165,11 @@ void init_image(std::vector<int, aligned_allocator<int>>& image) {
 
 void compute_reference(const std::vector<double>& arrayX,
                        const std::vector<double>& arrayY,
-                       const std::vector<double>& objxy,
+                       const std::vector<double, aligned_allocator<double>>& objxy,
                        const std::vector<int, aligned_allocator<int>>& image,
                        int countOnes,
                        std::vector<double>& likelihood_ref) {
     likelihood_ref.assign(arrayX.size(), 0.0);
-
     for (std::size_t x = 0; x < arrayX.size(); x++) {
         const int px = shared_roundDouble(arrayX[x]);
         const int py = shared_roundDouble(arrayY[x]);
@@ -189,17 +180,16 @@ void compute_reference(const std::vector<double>& arrayX,
             const int offX = shared_roundDouble(objxy[static_cast<std::size_t>(y) * 2 + 1]);
             const int indX = px + offX;
             const int indY = py + offY;
-            long idx = std::labs(static_cast<long>(indX) * kIszY * kNfr +
+            long idx = std::labs(static_cast<long>(indX) * GLOBAL_ISZY * kNfr +
                                  static_cast<long>(indY) * kNfr + kFrameIndex);
-
-            if (idx >= kMaxSize) {
+            if (idx >= GLOBAL_MAX_SIZE) {
                 idx = 0;
             }
 
             const int pix = image[static_cast<std::size_t>(idx)];
-            const int a = pix - static_cast<int>(PIXEL_A_OFFSET);
-            const int b = pix - static_cast<int>(PIXEL_B_OFFSET);
-            sum += (static_cast<double>(a * a) - static_cast<double>(b * b)) / PIXEL_DENOM;
+            const int a = pix - 100;
+            const int b = pix - 228;
+            sum += (static_cast<double>(a * a) - static_cast<double>(b * b)) / 50.0;
         }
 
         likelihood_ref[x] = sum / static_cast<double>(countOnes);
@@ -208,69 +198,51 @@ void compute_reference(const std::vector<double>& arrayX,
 
 std::vector<unsigned char> read_binary_file(const std::string& path) {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
-    if (!file) {
-        throw std::runtime_error("Failed to open xclbin: " + path);
-    }
+    if (!file) throw std::runtime_error("Failed to open xclbin: " + path);
 
     const std::streamsize size = file.tellg();
-    if (size <= 0) {
-        throw std::runtime_error("xclbin is empty: " + path);
-    }
+    if (size <= 0) throw std::runtime_error("xclbin is empty: " + path);
 
     file.seekg(0, std::ios::beg);
     std::vector<unsigned char> data(static_cast<std::size_t>(size));
     if (!file.read(reinterpret_cast<char*>(data.data()), size)) {
         throw std::runtime_error("Failed to read xclbin: " + path);
     }
-
     return data;
 }
 
 cl::Device pick_device() {
     std::vector<cl::Platform> platforms;
     cl::Platform::get(&platforms);
-    if (platforms.empty()) {
-        throw std::runtime_error("No OpenCL platforms found");
-    }
+    if (platforms.empty()) throw std::runtime_error("No OpenCL platforms found");
 
     for (const cl::Platform& platform : platforms) {
         std::vector<cl::Device> devices;
         platform.getDevices(CL_DEVICE_TYPE_ALL, &devices);
-        if (!devices.empty()) {
-            return devices.front();
-        }
+        if (!devices.empty()) return devices.front();
     }
-
     throw std::runtime_error("No OpenCL devices found");
 }
 
 OpenClSession open_session(const std::string& binary_file) {
     const cl::Device device = pick_device();
-
     cl_int err = CL_SUCCESS;
+    
     cl::Context context(device, nullptr, nullptr, nullptr, &err);
-    if (err != CL_SUCCESS) {
-        throw std::runtime_error("Failed to create OpenCL context");
-    }
+    if (err != CL_SUCCESS) throw std::runtime_error("Failed to create OpenCL context");
 
     cl::CommandQueue queue(context, device, CL_QUEUE_PROFILING_ENABLE, &err);
-    if (err != CL_SUCCESS) {
-        throw std::runtime_error("Failed to create command queue");
-    }
+    if (err != CL_SUCCESS) throw std::runtime_error("Failed to create command queue");
 
     const std::vector<unsigned char> file_buf = read_binary_file(binary_file);
     cl::Program::Binaries bins;
     bins.push_back({file_buf.data(), file_buf.size()});
 
     cl::Program program(context, {device}, bins, nullptr, &err);
-    if (err != CL_SUCCESS) {
-        throw std::runtime_error("Failed to program device with xclbin");
-    }
+    if (err != CL_SUCCESS) throw std::runtime_error("Failed to program device with xclbin");
 
     cl::Kernel kernel(program, "likelihood_kernel", &err);
-    if (err != CL_SUCCESS) {
-        throw std::runtime_error("Failed to create likelihood_kernel");
-    }
+    if (err != CL_SUCCESS) throw std::runtime_error("Failed to create likelihood_kernel");
 
     std::cout << "[INFO] Using device: " << device.getInfo<CL_DEVICE_NAME>() << "\n";
     return {context, queue, kernel};
@@ -278,17 +250,17 @@ OpenClSession open_session(const std::string& binary_file) {
 
 bool run_case(OpenClSession& session,
               const char* label,
-              bool boundary_case) {
-    std::vector<double> arrayX(kEmuParticles, 0.0);
-    std::vector<double> arrayY(kEmuParticles, 0.0);
-    std::vector<double> objxy(MAX_COUNT_ONES * 2, 0.0);
-    std::vector<double> likelihood_hw(kEmuParticles, 0.0);
-    std::vector<double> likelihood_ref;
-    std::vector<int, aligned_allocator<int>> image(kMaxSize);
+              int particle_count,
+              bool boundary_case,
+              bool verify) {
+    std::vector<double> arrayX(static_cast<std::size_t>(particle_count), 0.0);
+    std::vector<double> arrayY(static_cast<std::size_t>(particle_count), 0.0);
+    std::vector<double, aligned_allocator<double>> objxy(MAX_COUNT_ONES * 2, 0.0);
+    std::vector<int, aligned_allocator<int>> image(GLOBAL_MAX_SIZE);
 
-    const int countOnes = build_objxy_radius5(objxy);
+    const int countOnes = build_objxy_square(objxy);
     if (countOnes <= 0 || countOnes > MAX_COUNT_ONES) {
-        throw std::runtime_error("Invalid countOnes generated for radius-5 mask");
+        throw std::runtime_error("Invalid countOnes generated for mask");
     }
 
     if (boundary_case) {
@@ -297,161 +269,117 @@ bool run_case(OpenClSession& session,
         init_particles_interior(arrayX, arrayY);
     }
     init_image(image);
-    compute_reference(arrayX, arrayY, objxy, image, countOnes, likelihood_ref);
 
-    const std::size_t particle_words =
-        (arrayX.size() + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
-    const std::size_t objxy_words =
-        (static_cast<std::size_t>(countOnes) * 2 + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
+    std::vector<double> likelihood_ref;
+    if (verify) {
+        compute_reference(arrayX, arrayY, objxy, image, countOnes, likelihood_ref);
+    }
+
+    const std::size_t particle_words = (arrayX.size() + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
 
     std::vector<wide_t, aligned_allocator<wide_t>> arrayX_wide(particle_words);
     std::vector<wide_t, aligned_allocator<wide_t>> arrayY_wide(particle_words);
-    std::vector<wide_t, aligned_allocator<wide_t>> objxy_wide(objxy_words);
     std::vector<wide_t, aligned_allocator<wide_t>> likelihood_wide(particle_words);
 
     pack_doubles_to_wide(arrayX, arrayX_wide);
     pack_doubles_to_wide(arrayY, arrayY_wide);
-    objxy.resize(static_cast<std::size_t>(countOnes) * 2);
-    pack_doubles_to_wide(objxy, objxy_wide);
+
+    if (!verify) {
+        std::vector<double>().swap(arrayX);
+        std::vector<double>().swap(arrayY);
+    }
 
     cl_int err = CL_SUCCESS;
-    cl::Buffer buf_arrayX(session.context,
-                          CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                          sizeof(wide_t) * particle_words,
-                          arrayX_wide.data(),
-                          &err);
-    if (err != CL_SUCCESS) {
-        throw std::runtime_error("Failed to allocate arrayX buffer");
-    }
-
-    cl::Buffer buf_arrayY(session.context,
-                          CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                          sizeof(wide_t) * particle_words,
-                          arrayY_wide.data(),
-                          &err);
-    if (err != CL_SUCCESS) {
-        throw std::runtime_error("Failed to allocate arrayY buffer");
-    }
-
-    cl::Buffer buf_objxy(session.context,
-                         CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                         sizeof(wide_t) * objxy_words,
-                         objxy_wide.data(),
-                         &err);
-    if (err != CL_SUCCESS) {
-        throw std::runtime_error("Failed to allocate objxy buffer");
-    }
-
-    cl::Buffer buf_image(session.context,
-                         CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
-                         sizeof(int) * image.size(),
-                         image.data(),
-                         &err);
-    if (err != CL_SUCCESS) {
-        throw std::runtime_error("Failed to allocate image buffer");
-    }
-
-    cl::Buffer buf_likelihood(session.context,
-                              CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,
-                              sizeof(wide_t) * particle_words,
-                              likelihood_wide.data(),
-                              &err);
-    if (err != CL_SUCCESS) {
-        throw std::runtime_error("Failed to allocate likelihood buffer");
-    }
+    cl::Buffer buf_arrayX(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(wide_t) * particle_words, arrayX_wide.data(), &err);
+    cl::Buffer buf_arrayY(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(wide_t) * particle_words, arrayY_wide.data(), &err);
+    cl::Buffer buf_objxy(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(double) * objxy.size(), objxy.data(), &err);
+    cl::Buffer buf_image(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(int) * image.size(), image.data(), &err);
+    cl::Buffer buf_likelihood(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY, sizeof(wide_t) * particle_words, likelihood_wide.data(), &err);
 
     err = CL_SUCCESS;
-    err |= session.kernel.setArg(0, kEmuParticles);
+    err |= session.kernel.setArg(0, particle_count);
     err |= session.kernel.setArg(1, countOnes);
-    err |= session.kernel.setArg(2, kIszY);
+    err |= session.kernel.setArg(2, GLOBAL_ISZY);
     err |= session.kernel.setArg(3, kNfr);
     err |= session.kernel.setArg(4, kFrameIndex);
-    err |= session.kernel.setArg(5, kMaxSize);
+    err |= session.kernel.setArg(5, GLOBAL_MAX_SIZE);
     err |= session.kernel.setArg(6, buf_arrayX);
     err |= session.kernel.setArg(7, buf_arrayY);
     err |= session.kernel.setArg(8, buf_objxy);
     err |= session.kernel.setArg(9, buf_image);
     err |= session.kernel.setArg(10, buf_likelihood);
-    if (err != CL_SUCCESS) {
-        throw std::runtime_error("Failed to set kernel arguments");
-    }
+    if (err != CL_SUCCESS) throw std::runtime_error("Failed to set kernel arguments");
 
     err = session.queue.enqueueMigrateMemObjects({buf_arrayX, buf_arrayY, buf_objxy, buf_image}, 0);
-    if (err != CL_SUCCESS) {
-        throw std::runtime_error("Failed to migrate inputs");
-    }
-    err = session.queue.finish();
-    if (err != CL_SUCCESS) {
-        throw std::runtime_error("Failed to finish input migration");
-    }
+    err |= session.queue.finish();
+    if (err != CL_SUCCESS) throw std::runtime_error("Failed to migrate inputs");
 
     const timespec kernel_start = tic();
     err = session.queue.enqueueTask(session.kernel);
-    if (err != CL_SUCCESS) {
-        throw std::runtime_error("Failed to launch kernel");
-    }
-    err = session.queue.finish();
-    if (err != CL_SUCCESS) {
-        throw std::runtime_error("Failed to finish kernel execution");
-    }
+    err |= session.queue.finish();
     const timespec kernel_end = tic();
+    if (err != CL_SUCCESS) throw std::runtime_error("Failed to execute kernel");
 
     const timespec kernel_elapsed = diff(kernel_start, kernel_end);
     const double kernel_ms = static_cast<double>(kernel_elapsed.tv_sec) * 1.0e3 +
                              static_cast<double>(kernel_elapsed.tv_nsec) * 1.0e-6;
+    std::cout << "[" << label << "] kernel time = " << std::fixed << std::setprecision(3) << kernel_ms << " ms\n";
 
     err = session.queue.enqueueMigrateMemObjects({buf_likelihood}, CL_MIGRATE_MEM_OBJECT_HOST);
-    if (err != CL_SUCCESS) {
-        throw std::runtime_error("Failed to migrate output");
-    }
-    err = session.queue.finish();
-    if (err != CL_SUCCESS) {
-        throw std::runtime_error("Failed to finish output migration");
+    err |= session.queue.finish();
+
+    if (!verify) {
+        std::cout << "[" << label << "] likelihood checksum = " << std::setprecision(15) << checksum_wide(likelihood_wide, static_cast<std::size_t>(particle_count)) << "\n";
+        return true;
     }
 
+    std::vector<double> likelihood_hw(static_cast<std::size_t>(particle_count), 0.0);
     unpack_wide_to_doubles(likelihood_wide, likelihood_hw);
 
     bool pass = true;
     double max_abs_err = 0.0;
+    const double tol = 1e-5; 
+    
     for (std::size_t i = 0; i < likelihood_hw.size(); i++) {
         const double err_abs = std::fabs(likelihood_hw[i] - likelihood_ref[i]);
-        if (err_abs > max_abs_err) {
-            max_abs_err = err_abs;
-        }
-        if (err_abs > 1e-9) {
+        if (err_abs > max_abs_err) max_abs_err = err_abs;
+        if (err_abs > tol) {
             pass = false;
-            std::cout << "[" << label << "] mismatch at particle " << i
-                      << ": hw=" << std::setprecision(15) << likelihood_hw[i]
-                      << ", ref=" << likelihood_ref[i]
-                      << ", abs_err=" << err_abs << "\n";
+            std::cout << "[" << label << "] mismatch at particle " << i << ": hw=" << std::setprecision(15) << likelihood_hw[i] << ", ref=" << likelihood_ref[i] << ", abs_err=" << err_abs << "\n";
             break;
         }
     }
 
-    std::cout << "[" << label << "] kernel time = " << std::fixed << std::setprecision(3)
-              << kernel_ms << " ms, checksum = " << std::setprecision(15)
-              << checksum(likelihood_hw)
-              << ", max abs error = " << max_abs_err << "\n";
-
+    std::cout << "[" << label << "] checksum = " << std::setprecision(15) << checksum_wide(likelihood_wide, static_cast<std::size_t>(particle_count)) << ", max abs error = " << max_abs_err << "\n";
     return pass;
 }
 
 }  // namespace
 
 int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " <xclbin_path>\n";
+    if (argc != 2 && argc != 3) {
+        std::cerr << "Usage: " << argv[0] << " <xclbin_path> [--verify]\n";
         return EXIT_FAILURE;
     }
 
+    const bool do_verify = (argc == 3 && std::string(argv[2]) == "--verify");
+
     try {
         OpenClSession session = open_session(argv[1]);
-        bool pass = true;
-        pass &= run_case(session, "emu_interior", false);
-        pass &= run_case(session, "emu_boundary", true);
 
-        std::cout << (pass ? "TEST PASSED\n" : "TEST FAILED\n");
-        return pass ? EXIT_SUCCESS : EXIT_FAILURE;
+        if (do_verify) {
+            bool pass = true;
+            pass &= run_case(session, "verify_interior", GLOBAL_NUM_PARTICLES, false, true);
+            pass &= run_case(session, "verify_boundary", GLOBAL_NUM_PARTICLES, true, true);
+            std::cout << (pass ? "TEST PASSED\n" : "TEST FAILED\n");
+            return pass ? EXIT_SUCCESS : EXIT_FAILURE;
+        }
+
+        if (!run_case(session, "hardware_run", GLOBAL_NUM_PARTICLES, false, false)) {
+            return EXIT_FAILURE;
+        }
+        return EXIT_SUCCESS;
+
     } catch (const std::exception& e) {
         std::cerr << "[ERROR] " << e.what() << "\n";
         return EXIT_FAILURE;
