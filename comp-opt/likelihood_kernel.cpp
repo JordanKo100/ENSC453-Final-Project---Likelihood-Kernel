@@ -24,7 +24,8 @@ void load_objxy(const double* objxy,
 
     loadObjxy: for (int i = 0; i < countOnes * 2; i++) {
         #pragma HLS PIPELINE II=1
-        #pragma HLS LOOP_TRIPCOUNT min=2 max=160
+        // Tripcount: 2025 * 2 = 4050
+        #pragma HLS LOOP_TRIPCOUNT min=2 max=4050
         buffer_objxy[i] = roundDouble(objxy[i]);
     }
 }
@@ -38,7 +39,8 @@ void build_obj_offsets(const int buffer_objxy[MAX_COUNT_ONES * 2],
 
     buildObjOffsets: for (int i = 0; i < countOnes; i++) {
         #pragma HLS PIPELINE II=1
-        #pragma HLS LOOP_TRIPCOUNT min=1 max=80
+        // Tripcount: 2025
+        #pragma HLS LOOP_TRIPCOUNT min=1 max=2025
         const int offY = buffer_objxy[i * 2];
         const int offX = buffer_objxy[i * 2 + 1];
         buffer_objxy_offset[i] = offX * IszY * Nfr + offY * Nfr;
@@ -61,7 +63,6 @@ void load_particles(const double* arrayX,
 
         const int px = roundDouble(arrayX[base + x]);
         const int py = roundDouble(arrayY[base + x]);
-        
         buffer_idx_1D[x] =
             (long)px * (long)IszY * (long)Nfr + (long)py * (long)Nfr + (long)k;
     }
@@ -81,7 +82,8 @@ void load_pixels(const long buffer_idx_1D[N_BUFFER_SIZE],
 
     loadPixels: for (int iter = 0; iter < activeParticles * countOnes; iter++) {
         #pragma HLS PIPELINE II=1
-        #pragma HLS LOOP_TRIPCOUNT min=1 max=5120
+        // Tripcount: 64 buffer * 2025 points = 129600
+        #pragma HLS LOOP_TRIPCOUNT min=1 max=129600
 
         long idx = absLong(buffer_idx_1D[x] + (long)buffer_objxy_offset[y]);
         if (idx >= max_size) {
@@ -108,7 +110,6 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
     const double bias = kPixelBiasNum / kPixelDen;
 
     computeParticles: for (int x = 0; x < activeParticles; x++) {
-        #pragma HLS PIPELINE II=1
         #pragma HLS LOOP_TRIPCOUNT min=1 max=64
         int partial_sum[PIX_SUM_LANES];
         #pragma HLS ARRAY_PARTITION variable=partial_sum complete dim=1
@@ -119,9 +120,11 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
         }
 
         accumPixels: for (int chunk = 0; chunk < PIX_CHUNKS; chunk++) {
-            #pragma HLS UNROLL
+            #pragma HLS PIPELINE II=1 
+            
             const int chunk_idx = chunk * PIX_SUM_LANES;
             accumulateLanes: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
+                #pragma HLS UNROLL 
                 const int idx = chunk_idx + lane;
                 if (idx < countOnes) {
                     partial_sum[lane] += buffer_pixels[x][idx];
@@ -194,15 +197,16 @@ void likelihood_kernel(int Nparticles,
     int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES];
     double buffer_likelihood[N_BUFFER_SIZE];
 
-// partition for likelihood computation
-#pragma HLS ARRAY_PARTITION variable=buffer_pixels complete dim=2
+    // partition for likelihood computation
+    #pragma HLS ARRAY_PARTITION variable=buffer_pixels cyclic factor=45 dim=2
 
     load_objxy(objxy, buffer_objxy, countOnes);
     build_obj_offsets(buffer_objxy, buffer_objxy_offset, countOnes, IszY, Nfr);
 
 Particle_loop:
     for (int base = 0; base < Nparticles; base += N_BUFFER_SIZE) {
-#pragma HLS LOOP_TRIPCOUNT min=1 max=157
+        // 1,000,000 max particles / 64 buffer size = 15625 iterations max
+#pragma HLS LOOP_TRIPCOUNT min=1 max=15625
 #pragma HLS LOOP_FLATTEN off
         
         // ensures no remaining particles are left uncalculated
