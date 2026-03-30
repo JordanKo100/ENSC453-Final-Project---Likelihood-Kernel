@@ -7,7 +7,8 @@
 #define DOUBLE_BITS 64
 #define DOUBLES_PER_WORD (AXI_BITS / DOUBLE_BITS)
 
-#define MAX_COUNT_ONES 80 // MASK SIZE
+// Updated to 2025 to support up to a 45x45 square mask
+#define MAX_COUNT_ONES 2025 
 #define N_BUFFER_SIZE 64
 
 // Pre-calculate the number of wide words needed for loading particles and storing likelihood  
@@ -16,7 +17,8 @@
 // Pre-calculate the maximum number of wide words needed for objxy
 #define OBJ_PER_TILE ((MAX_COUNT_ONES * 2) / DOUBLES_PER_WORD) 
 
-const int PIX_SUM_LANES = 10;
+// 2025 must be perfectly divisible by PIX_SUM_LANES. We use 45.
+const int PIX_SUM_LANES = 45;
 const int PIX_CHUNKS = (MAX_COUNT_ONES / PIX_SUM_LANES);
 
 static_assert(N_BUFFER_SIZE % WORDS_PER_TILE == 0, "N_BUFFER_SIZE must be strictly divisible by 8 to align with 512-bit AXI ports!");
