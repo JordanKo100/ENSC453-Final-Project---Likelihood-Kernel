@@ -86,7 +86,7 @@ xclbin: build
 ############################## Setting Rules for Binary Containers (Building Kernels) ##############################
 $(TEMP_DIR)/likelihood_krl.xo: likelihood_kernel.cpp likelihood_kernel.h
 	mkdir -p $(TEMP_DIR)
-	v++ $(VPP_FLAGS) -c -k likelihood_kernel --temp_dir $(TEMP_DIR) -I'$(<D)' -o'$@' '$<'
+	v++ $(VPP_FLAGS) -I/usr/include/x86_64-linux-gnu -c -k likelihood_kernel --temp_dir $(TEMP_DIR) -I'$(<D)' -o'$@' '$<'
 
 $(BUILD_DIR)/likelihood_krl.xclbin: $(TEMP_DIR)/likelihood_krl.xo
 	mkdir -p $(BUILD_DIR)
