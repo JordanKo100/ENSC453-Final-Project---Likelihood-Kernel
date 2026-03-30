@@ -62,65 +62,62 @@ void run_likelihood(int Nparticles, int countOnes, int IszY, int Nfr, int k,
 }
 
 int main() {
-    // 1. Setup Data
-    const int Nparticles = 10000;
-    const int IszY = 480;
-    const int Nfr = 3;
-    const int k = 1;
-    const long max_size = 1000000;
+    // 1. Setup Data (Matched with hw-run_host.txt)
+    const int Nparticles = 1000000;
+    const int IszY = 4000;         
+    const int Nfr = 1;
+    const int k = 0;
+    const long max_size = 16000000;
     const int threads = 6;
 
     printf("Thread count: %d\n", threads);
 
-    // Build objxy using the radius=5 logic from the testbench to get realistic offsets
-    const int radius = 5;
-    const int diameter = radius * 2 - 1;
-    const int center = radius - 1;
-    int countOnes = 0;
-    
     // Allocate max possible size for a 9x9 grid, then resize down to actual countOnes
-    std::vector<double> objxy(diameter * diameter * 2, 0.0);
-    for (int x = 0; x < diameter; x++) {
-        for (int y = 0; y < diameter; y++) {
-            double distance = std::sqrt(
-                std::pow((double)(x - center), 2.0) +
-                std::pow((double)(y - center), 2.0));
-            if (distance < radius) {
-                objxy[countOnes * 2] = (double)(y - center);
-                objxy[countOnes * 2 + 1] = (double)(x - center);
-                countOnes++;
-            }
+    // 1. Setup Data for a 9x9 Square Mask
+    const int length = 45; 
+    const int center = (length - 1) / 2; // (length - 1) / 2
+    int countOnes = length * length; 
+    
+    // Allocate exact size, no resizing needed
+    std::vector<double> objxy(countOnes * 2, 0.0);
+    
+    int current_point = 0;
+    for (int x = 0; x < length; x++) {
+        for (int y = 0; y < length; y++) {
+            // No distance calculation or if-statement needed!
+            // Just store every point in the 9x9 grid.
+            objxy[current_point * 2] = (double)(y - center);
+            objxy[current_point * 2 + 1] = (double)(x - center);
+            current_point++;
         }
     }
-    objxy.resize(countOnes * 2);
 
-    // Initialize particles using the 'interior' logic from the testbench [cite: 90, 91]
+    // Initialize particles using the 'interior' logic from the testbench
     std::vector<double> arrayX(Nparticles);
     std::vector<double> arrayY(Nparticles);
     for (int i = 0; i < Nparticles; i++) {
-        arrayX[i] = 80.0 + (i % 23) * 1.75;
-        arrayY[i] = 120.0 + (i % 19) * 1.125;
+        arrayX[i] = 80.0 + (double)(i % 64) * 1.125; // Updated modulo and multiplier
+        arrayY[i] = 120.0 + (double)(i % 32) * 0.875; // Updated modulo and multiplier
     }
     
-    // Initialize I array with the modulo pattern from the testbench [cite: 120]
+    // Initialize I array with the modulo pattern from the testbench
     std::vector<int> I(max_size); 
     for (long i = 0; i < max_size; i++) {
         I[i] = 100 + (int)(i % 129);
     }
     
     std::vector<double> likelihood(Nparticles);
-    std::vector<int> ind_buffer(Nparticles * countOnes); 
-
+    std::vector<int> ind_buffer((size_t)Nparticles * countOnes);
     printf("Starting Speedup Test (N=%d, Points=%d)...\n", Nparticles, countOnes);
 
-    // 2. Measure Serial Time
-    timespec start_serial = tic();
-    run_likelihood(Nparticles, countOnes, IszY, Nfr, k, max_size, 
-                   arrayX.data(), arrayY.data(), objxy.data(), I.data(), 
-                   likelihood.data(), false, ind_buffer.data(), threads);
-    timespec end_serial = tic();
-    timespec diff_serial = diff(start_serial, end_serial);
-    printTimeSpec(diff_serial, "SERIAL TIME  ");
+    // // 2. Measure Serial Time
+    // timespec start_serial = tic();
+    // run_likelihood(Nparticles, countOnes, IszY, Nfr, k, max_size, 
+    //                arrayX.data(), arrayY.data(), objxy.data(), I.data(), 
+    //                likelihood.data(), false, ind_buffer.data(), threads);
+    // timespec end_serial = tic();
+    // timespec diff_serial = diff(start_serial, end_serial);
+    // printTimeSpec(diff_serial, "SERIAL TIME  ");
 
     // 3. Measure Parallel Time
     timespec start_parallel = tic();
@@ -131,13 +128,13 @@ int main() {
     timespec diff_parallel = diff(start_parallel, end_parallel);
     printTimeSpec(diff_parallel, "PARALLEL TIME");
 
-    // 4. Calculate Speedup
-    double s_sec = (double)diff_serial.tv_sec + (double)diff_serial.tv_nsec / 1000000000.0;
-    double p_sec = (double)diff_parallel.tv_sec + (double)diff_parallel.tv_nsec / 1000000000.0;
+    // // 4. Calculate Speedup
+    // double s_sec = (double)diff_serial.tv_sec + (double)diff_serial.tv_nsec / 1000000000.0;
+    // double p_sec = (double)diff_parallel.tv_sec + (double)diff_parallel.tv_nsec / 1000000000.0;
     
-    printf("------------------------------\n");
-    printf("Calculated Speedup: %.2fx\n", s_sec / p_sec);
-    printf("------------------------------\n");
+    // printf("------------------------------\n");
+    // printf("Calculated Speedup: %.2fx\n", s_sec / p_sec);
+    // printf("------------------------------\n");
 
     return 0;
 }
