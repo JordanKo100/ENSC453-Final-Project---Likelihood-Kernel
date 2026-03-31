@@ -17,6 +17,17 @@
 #include "likelihood_kernel.h"
 #include "my_timer.h"
 
+// Hardware Execution Constants
+#define GLOBAL_NUM_PARTICLES 1000000
+#define GLOBAL_ISZX 4000
+#define GLOBAL_ISZY 4000
+#define GLOBAL_MAX_SIZE 16000000
+
+// PRNG Constants (Rodinia LCG)
+const long PRNG_M = 2147483647; // INT_MAX
+const int PRNG_A = 1103515245;
+const int PRNG_C = 12345;
+
 namespace {
 
 // Constant tracking values
@@ -46,19 +57,13 @@ struct OpenClSession {
 };
 
 inline double bits_to_double(uint64_t bits) {
-    union {
-        uint64_t u;
-        double d;
-    } conv;
+    union { uint64_t u; double d; } conv;
     conv.u = bits;
     return conv.d;
 }
 
 inline uint64_t double_to_bits(double value) {
-    union {
-        uint64_t u;
-        double d;
-    } conv;
+    union { uint64_t u; double d; } conv;
     conv.d = value;
     return conv.u;
 }
@@ -91,25 +96,53 @@ void unpack_wide_to_doubles(const std::vector<wide_t, aligned_allocator<wide_t>>
     }
 }
 
-int build_objxy_square(std::vector<double, aligned_allocator<double>>& objxy) {
-    const int center = (GLOBAL_MASK_LENGTH - 1) / 2;
-    int countOnes = GLOBAL_MASK_LENGTH * GLOBAL_MASK_LENGTH;
-    int current_point = 0;
-    for (int x = 0; x < GLOBAL_MASK_LENGTH; x++) {
-        for (int y = 0; y < GLOBAL_MASK_LENGTH; y++) {
-            objxy[current_point * 2] = static_cast<double>(y - center);
-            objxy[current_point * 2 + 1] = static_cast<double>(x - center);
-            current_point++;
-        }
-    }
-    return countOnes;
+// PRNG implementations matching Rodinia CPU
+double randu(std::vector<int>& seed, int index) {
+    long long num = (long long)PRNG_A * seed[index] + PRNG_C;
+    seed[index] = static_cast<int>(num % PRNG_M);
+    return std::fabs(seed[index] / static_cast<double>(PRNG_M));
 }
 
-void init_particles_interior(std::vector<double>& arrayX,
-                             std::vector<double>& arrayY) {
+double randn(std::vector<int>& seed, int index) {
+    double u = randu(seed, index);
+    double v = randu(seed, index);
+    double cosine = std::cos(2.0 * M_PI * v);
+    double rt = -2.0 * std::log(u);
+    return std::sqrt(rt) * cosine;
+}
+
+// Updated to build the exact 69-point circular disk
+void build_objxy_disk(std::vector<double, aligned_allocator<double>>& objxy) {
+    int radius = 5;
+    int current_point = 0;
+    for (int x = -radius + 1; x < radius; x++) {
+        for (int y = -radius + 1; y < radius; y++) {
+            double distance = std::sqrt(x * x + y * y);
+            if (distance < radius) {
+                // Ensure we do not overflow the statically sized array
+                if (current_point < MAX_COUNT_ONES) {
+                    objxy[current_point * 2] = static_cast<double>(y);
+                    objxy[current_point * 2 + 1] = static_cast<double>(x);
+                    current_point++;
+                }
+            }
+        }
+    }
+}
+
+// Generates dynamic particles using the PRNG Random Walk
+void init_particles(std::vector<double>& arrayX, std::vector<double>& arrayY) {
+    std::vector<int> seed(arrayX.size());
+    for (std::size_t i = 0; i < seed.size(); i++) {
+        seed[i] = 1337 * (i + 1); // Deterministic seed
+    }
+
+    double center_x = GLOBAL_ISZY / 2.0;
+    double center_y = GLOBAL_ISZX / 2.0;
+
     for (std::size_t i = 0; i < arrayX.size(); i++) {
-        arrayX[i] = 80.0 + static_cast<double>(i % 64) * 1.125;
-        arrayY[i] = 120.0 + static_cast<double>(i % 32) * 0.875;
+        arrayX[i] = center_x + 1.0 + 5.0 * randn(seed, i);
+        arrayY[i] = center_y - 2.0 + 2.0 * randn(seed, i);
     }
 }
 
@@ -175,19 +208,15 @@ void run_hw_only(OpenClSession& session, int particle_count) {
     
     std::vector<double> arrayX(static_cast<std::size_t>(particle_count), 0.0);
     std::vector<double> arrayY(static_cast<std::size_t>(particle_count), 0.0);
+    // Allocate exactly 69 points * 2 doubles
     std::vector<double, aligned_allocator<double>> objxy(MAX_COUNT_ONES * 2, 0.0);
     std::vector<int, aligned_allocator<int>> image(GLOBAL_MAX_SIZE);
 
-    const int countOnes = build_objxy_square(objxy);
-    if (countOnes <= 0 || countOnes > MAX_COUNT_ONES) {
-        throw std::runtime_error("Invalid countOnes generated for mask");
-    }
-
-    init_particles_interior(arrayX, arrayY);
+    build_objxy_disk(objxy);
+    init_particles(arrayX, arrayY);
     init_image(image);
 
     const std::size_t particle_words = (arrayX.size() + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
-
     std::vector<wide_t, aligned_allocator<wide_t>> arrayX_wide(particle_words);
     std::vector<wide_t, aligned_allocator<wide_t>> arrayY_wide(particle_words);
     std::vector<wide_t, aligned_allocator<wide_t>> likelihood_wide(particle_words);
@@ -202,18 +231,19 @@ void run_hw_only(OpenClSession& session, int particle_count) {
     cl::Buffer buf_image(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(int) * image.size(), image.data(), &err);
     cl::Buffer buf_likelihood(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY, sizeof(wide_t) * particle_words, likelihood_wide.data(), &err);
 
+    // Updated Kernel Arguments (countOnes removed, indices shifted)
     err = CL_SUCCESS;
     err |= session.kernel.setArg(0, particle_count);
-    err |= session.kernel.setArg(1, countOnes);
-    err |= session.kernel.setArg(2, GLOBAL_ISZY);
-    err |= session.kernel.setArg(3, kNfr);
-    err |= session.kernel.setArg(4, kFrameIndex);
-    err |= session.kernel.setArg(5, (cl_long)GLOBAL_MAX_SIZE);
-    err |= session.kernel.setArg(6, buf_arrayX);
-    err |= session.kernel.setArg(7, buf_arrayY);
-    err |= session.kernel.setArg(8, buf_objxy);
-    err |= session.kernel.setArg(9, buf_image);
-    err |= session.kernel.setArg(10, buf_likelihood);
+    err |= session.kernel.setArg(1, GLOBAL_ISZY);
+    err |= session.kernel.setArg(2, kNfr);
+    err |= session.kernel.setArg(3, kFrameIndex);
+    err |= session.kernel.setArg(4, (cl_long)GLOBAL_MAX_SIZE);
+    err |= session.kernel.setArg(5, buf_arrayX);
+    err |= session.kernel.setArg(6, buf_arrayY);
+    err |= session.kernel.setArg(7, buf_objxy);
+    err |= session.kernel.setArg(8, buf_image);
+    err |= session.kernel.setArg(9, buf_likelihood);
+    
     if (err != CL_SUCCESS) throw std::runtime_error("Failed to set kernel arguments");
 
     err = session.queue.enqueueMigrateMemObjects({buf_arrayX, buf_arrayY, buf_objxy, buf_image}, 0);
@@ -225,6 +255,7 @@ void run_hw_only(OpenClSession& session, int particle_count) {
     err = session.queue.enqueueTask(session.kernel);
     err |= session.queue.finish();
     const timespec kernel_end = tic();
+    
     if (err != CL_SUCCESS) throw std::runtime_error("Failed to execute kernel");
 
     const timespec kernel_elapsed = diff(kernel_start, kernel_end);
@@ -258,7 +289,6 @@ int main(int argc, char* argv[]) {
 
     try {
         OpenClSession session = open_session(argv[1]);
-        
         run_hw_only(session, GLOBAL_NUM_PARTICLES);
 
         return EXIT_SUCCESS;

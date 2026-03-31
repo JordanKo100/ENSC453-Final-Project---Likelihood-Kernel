@@ -7,39 +7,56 @@
 
 #include "likelihood_kernel.h"
 
-// 1. Updated Data Constants
 #define TB_MAX_NPARTICLES 1000000
 #define TB_ISZY 4000
+#define TB_ISZX 4000
 #define TB_NFR 1
 #define TB_K 0
 #define TB_MAX_SIZE 16000000
 
-#define MASK_LENGTH 45
-#define TB_MAX_COUNT_ONES (MASK_LENGTH * MASK_LENGTH) // 2025
+// Constant for PRNG
+const long M = 2147483647; // INT_MAX
+const int A = 1103515245;
+const int C = 12345;
 
 inline int tb_roundDouble(double value) {
     return static_cast<int>(value + ((value >= 0.0) ? 0.5 : -0.5));
 }
 
-// 2. Updated to use the 45x45 Square Mask Logic
-int build_objxy_square(std::vector<double>& objxy) {
-    const int length = MASK_LENGTH;
-    const int center = (length - 1) / 2;
-    int countOnes = length * length; 
-    
-    int current_point = 0;
-    for (int x = 0; x < length; x++) {
-        for (int y = 0; y < length; y++) {
-            objxy[current_point * 2] = (double)(y - center);
-            objxy[current_point * 2 + 1] = (double)(x - center);
-            current_point++;
-        }
-    }
-    return countOnes;
+// 1. Re-implemented PRNG for testbench verification
+double randu(std::vector<int>& seed, int index) {
+    long long num = (long long)A * seed[index] + C;
+    seed[index] = num % M;
+    return std::fabs(seed[index] / ((double)M));
 }
 
+double randn(std::vector<int>& seed, int index) {
+    double u = randu(seed, index);
+    double v = randu(seed, index);
+    double cosine = std::cos(2.0 * M_PI * v);
+    double rt = -2.0 * std::log(u);
+    return std::sqrt(rt) * cosine;
+}
+
+// 2. Updated to generate exactly 69 points in a radius 5 disk
+void build_objxy_disk(std::vector<double>& objxy) {
+    int radius = 5;
+    int current_point = 0;
+    for (int x = -radius + 1; x < radius; x++) {
+        for (int y = -radius + 1; y < radius; y++) {
+            double distance = std::sqrt(x * x + y * y);
+            if (distance < radius) {
+                // Matches (y - center) and (x - center) logic
+                objxy[current_point * 2] = (double)y;
+                objxy[current_point * 2 + 1] = (double)x;
+                current_point++;
+            }
+        }
+    }
+}
+
+// 3. Removed countOnes parameter, relies on MAX_COUNT_ONES macro
 void compute_reference(int Nparticles,
-                       int countOnes,
                        int IszY,
                        int Nfr,
                        int k,
@@ -54,7 +71,7 @@ void compute_reference(int Nparticles,
         int py = tb_roundDouble(arrayY[x]);
         double sum = 0.0;
 
-        for (int y = 0; y < countOnes; y++) {
+        for (int y = 0; y < MAX_COUNT_ONES; y++) {
             int offY = tb_roundDouble(objxy[y * 2]);
             int offX = tb_roundDouble(objxy[y * 2 + 1]);
             int indX = px + offX;
@@ -71,72 +88,42 @@ void compute_reference(int Nparticles,
             sum += ((double)(a * a) - (double)(b * b)) / 50.0;
         }
 
-        likelihood_ref[x] = sum / (double)countOnes;
+        likelihood_ref[x] = sum / (double)MAX_COUNT_ONES;
     }
 }
 
-// 3. Updated Particle Initialization Math
-void init_particles_interior(double* arrayX, double* arrayY, int Nparticles) {
+// 4. Initialize dynamically sized particles using randn
+void init_particles(std::vector<double>& arrayX, std::vector<double>& arrayY, int Nparticles) {
+    std::vector<int> seed(Nparticles);
     for (int i = 0; i < Nparticles; i++) {
-        arrayX[i] = 80.0 + (double)(i % 64) * 1.125;
-        arrayY[i] = 120.0 + (double)(i % 32) * 0.875;
+        seed[i] = 1337 * (i + 1); // Deterministic seed for TB reproducibility
     }
-}
 
-void init_particles_boundary(double* arrayX, double* arrayY, int Nparticles) {
+    double center_x = TB_ISZY / 2.0;
+    double center_y = TB_ISZX / 2.0;
+
     for (int i = 0; i < Nparticles; i++) {
-        switch (i % 6) {
-            case 0:
-                arrayX[i] = -3.6;
-                arrayY[i] = -1.8;
-                break;
-            case 1:
-                arrayX[i] = 0.2;
-                arrayY[i] = 479.7;
-                break;
-            case 2:
-                arrayX[i] = 4800.0 + (double)i;
-                arrayY[i] = 470.4;
-                break;
-            case 3:
-                arrayX[i] = 1.2;
-                arrayY[i] = -4.7;
-                break;
-            case 4:
-                arrayX[i] = 100000.0 + (double)(i * 11);
-                arrayY[i] = 100000.0 - (double)(i * 7);
-                break;
-            default:
-                arrayX[i] = 82.0 + (i % 9) * 2.4;
-                arrayY[i] = 118.0 + (i % 11) * 1.6;
-                break;
-        }
+        // Applying the random walk drift/noise from the OpenMP code
+        arrayX[i] = center_x + 1.0 + 5.0 * randn(seed, i);
+        arrayY[i] = center_y - 2.0 + 2.0 * randn(seed, i);
     }
 }
 
 bool run_case(const char* label,
               int Nparticles,
-              bool boundary_case,
               long max_size,
               const double* objxy,
-              int countOnes,
               const int* I) 
 {
-    // 4. Changed to std::vector to safely handle the 1,000,000 particle size
     std::vector<double> arrayX(Nparticles, 0.0);
     std::vector<double> arrayY(Nparticles, 0.0);
     std::vector<double> likelihood_hw(Nparticles, 0.0);
     std::vector<double> likelihood_ref(Nparticles, 0.0);
 
-    if (boundary_case) {
-        init_particles_boundary(arrayX.data(), arrayY.data(), Nparticles);
-    } else {
-        init_particles_interior(arrayX.data(), arrayY.data(), Nparticles);
-    }
+    init_particles(arrayX, arrayY, Nparticles);
 
     compute_reference(
         Nparticles,
-        countOnes,
         TB_ISZY,
         TB_NFR,
         TB_K,
@@ -151,7 +138,6 @@ bool run_case(const char* label,
 
     likelihood_kernel(
         Nparticles,
-        countOnes,
         TB_ISZY,
         TB_NFR,
         TB_K,
@@ -189,15 +175,15 @@ bool run_case(const char* label,
               << "  elapsed = " << elapsed.count() << " s"
               << "  max_abs_err = " << std::setprecision(12) << max_abs_err
               << "\n";
+
     return pass;
 }
 
 int main() {
-    // 5. Changed to std::vector to safely handle the 16,000,000 max size
-    std::vector<double> objxy(TB_MAX_COUNT_ONES * 2, 0.0);
+    std::vector<double> objxy(MAX_COUNT_ONES * 2, 0.0);
     std::vector<int> I(TB_MAX_SIZE, 0);
 
-    int countOnes = build_objxy_square(objxy);
+    build_objxy_disk(objxy);
 
     for (long i = 0; i < TB_MAX_SIZE; i++) {
         I[i] = 100 + (int)(i % 129);
@@ -205,12 +191,11 @@ int main() {
 
     bool pass = true;
     
-    // Testing the massive 1,000,000 interior case
-    pass &= run_case("massive_interior_case", TB_MAX_NPARTICLES, false, TB_MAX_SIZE, objxy.data(), countOnes, I.data());
-    
-    // Testing smaller corner cases to verify boundary logic
-    pass &= run_case("small_boundary_case", 65, true, TB_MAX_SIZE, objxy.data(), countOnes, I.data());
-    pass &= run_case("clamp_case", 65, true, 37, objxy.data(), countOnes, I.data());
+    // Testing specific particle bounds with the new random distribution
+    pass &= run_case("massive_case", TB_MAX_NPARTICLES, TB_MAX_SIZE, objxy.data(), I.data());
+    pass &= run_case("medium_case", 50000, TB_MAX_SIZE, objxy.data(), I.data());
+    pass &= run_case("small_case", 65, TB_MAX_SIZE, objxy.data(), I.data());
+    pass &= run_case("clamp_case", 65, 37, objxy.data(), I.data());
 
     if (pass) {
         std::cout << "TEST PASSED\n";

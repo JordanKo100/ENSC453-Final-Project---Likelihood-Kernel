@@ -17,30 +17,24 @@ inline long absLong(long value) {
     return (value < 0) ? -value : value;
 }
 
-void load_objxy(const double* objxy,
-                int buffer_objxy[MAX_COUNT_ONES * 2],
-                int countOnes) {
+// Removed countOnes: Logic is now fixed for 69 points (138 doubles)
+void load_objxy(const double* objxy, int buffer_objxy[MAX_COUNT_ONES * 2]) {
     #pragma HLS INLINE
-
-    loadObjxy: for (int i = 0; i < countOnes * 2; i++) {
+    loadObjxy: for (int i = 0; i < MAX_COUNT_ONES * 2; i++) {
         #pragma HLS PIPELINE II=1
-        // Tripcount: 2025 * 2 = 4050
-        #pragma HLS LOOP_TRIPCOUNT min=2 max=4050
+        #pragma HLS LOOP_TRIPCOUNT min=138 max=138
         buffer_objxy[i] = roundDouble(objxy[i]);
     }
 }
 
 void build_obj_offsets(const int buffer_objxy[MAX_COUNT_ONES * 2],
                        int buffer_objxy_offset[MAX_COUNT_ONES],
-                       int countOnes,
                        int IszY,
                        int Nfr) {
     #pragma HLS INLINE
-
-    buildObjOffsets: for (int i = 0; i < countOnes; i++) {
+    buildObjOffsets: for (int i = 0; i < MAX_COUNT_ONES; i++) {
         #pragma HLS PIPELINE II=1
-        // Tripcount: 2025
-        #pragma HLS LOOP_TRIPCOUNT min=1 max=2025
+        #pragma HLS LOOP_TRIPCOUNT min=69 max=69
         const int offY = buffer_objxy[i * 2];
         const int offX = buffer_objxy[i * 2 + 1];
         buffer_objxy_offset[i] = offX * IszY * Nfr + offY * Nfr;
@@ -55,36 +49,32 @@ void load_particles(const double* arrayX,
                     int IszY,
                     int Nfr,
                     int k) {
-    #pragma HLS INLINE
-
-    loadParticles: for (int x = 0; x < activeParticles; x++) {
-        #pragma HLS PIPELINE II=1
-        #pragma HLS LOOP_TRIPCOUNT min=1 max=64
-
+#pragma HLS INLINE
+    loadParticles: 
+    for (int x = 0; x < activeParticles; x++) {
+#pragma HLS PIPELINE II=1
+#pragma HLS LOOP_TRIPCOUNT min=1 max=64
         const int px = roundDouble(arrayX[base + x]);
         const int py = roundDouble(arrayY[base + x]);
-        buffer_idx_1D[x] =
-            (long)px * (long)IszY * (long)Nfr + (long)py * (long)Nfr + (long)k;
+        buffer_idx_1D[x] = (long)px * (long)IszY * (long)Nfr + (long)py * (long)Nfr + (long)k;
     }
 }
 
+// 3. Max tripcount is now 64 * 69 = 4416
 void load_pixels(const long buffer_idx_1D[N_BUFFER_SIZE],
                  const int buffer_objxy_offset[MAX_COUNT_ONES],
-                 int countOnes,
                  long max_size,
                  const int* I,
                  int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
                  int activeParticles) {
-    #pragma HLS INLINE
-
+#pragma HLS INLINE
     int x = 0;
     int y = 0;
 
-    loadPixels: for (int iter = 0; iter < activeParticles * countOnes; iter++) {
-        #pragma HLS PIPELINE II=1
-        // Tripcount: 64 buffer * 2025 points = 129600
-        #pragma HLS LOOP_TRIPCOUNT min=1 max=129600
-
+    loadPixels:
+    for (int iter = 0; iter < activeParticles * MAX_COUNT_ONES; iter++) {
+#pragma HLS PIPELINE II=1
+#pragma HLS LOOP_TRIPCOUNT min=69 max=4416 
         long idx = absLong(buffer_idx_1D[x] + (long)buffer_objxy_offset[y]);
         if (idx >= max_size) {
             idx = 0;
@@ -92,7 +82,7 @@ void load_pixels(const long buffer_idx_1D[N_BUFFER_SIZE],
 
         buffer_pixels[x][y] = I[idx];
         y++;
-        if (y == countOnes) {
+        if (y == MAX_COUNT_ONES) {
             y = 0;
             x++;
         }
@@ -100,12 +90,10 @@ void load_pixels(const long buffer_idx_1D[N_BUFFER_SIZE],
 }
 
 void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
-                        int countOnes,
                         double buffer_likelihood[N_BUFFER_SIZE],
                         int activeParticles) {
-    
     #pragma HLS INLINE
-    const double inv_count = 1.0 / (double)countOnes;
+    const double inv_count = 1.0 / (double)MAX_COUNT_ONES;
     const double scale = (kPixelScaleNum / kPixelDen) * inv_count;
     const double bias = kPixelBiasNum / kPixelDen;
 
@@ -121,14 +109,12 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
 
         accumPixels: for (int chunk = 0; chunk < PIX_CHUNKS; chunk++) {
             #pragma HLS PIPELINE II=1 
-            
             const int chunk_idx = chunk * PIX_SUM_LANES;
             accumulateLanes: for (int lane = 0; lane < PIX_SUM_LANES; lane++) {
                 #pragma HLS UNROLL 
                 const int idx = chunk_idx + lane;
-                if (idx < countOnes) {
-                    partial_sum[lane] += buffer_pixels[x][idx];
-                }
+                // Boundary check removed because 23 divides 69 perfectly
+                partial_sum[lane] += buffer_pixels[x][idx];
             }
         }
 
@@ -137,7 +123,6 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES],
             #pragma HLS UNROLL
             pixel_sum += partial_sum[lane];
         }
-
         buffer_likelihood[x] = scale * (double)pixel_sum - bias;
     }
 }
@@ -146,36 +131,27 @@ void store_likelihood(double* likelihood,
                       const double buffer_likelihood[N_BUFFER_SIZE],
                       int base,
                       int activeParticles) {
-    #pragma HLS INLINE
-
-    storeLikelihood: for (int x = 0; x < activeParticles; x++) {
-        #pragma HLS PIPELINE II=1
-        #pragma HLS LOOP_TRIPCOUNT min=1 max=64
-
+#pragma HLS INLINE
+    storeLikelihood: 
+    for (int x = 0; x < activeParticles; x++) {
+#pragma HLS PIPELINE II=1
+#pragma HLS LOOP_TRIPCOUNT min=1 max=64
         likelihood[base + x] = buffer_likelihood[x];
     }
 }
 
 extern "C" {
-void likelihood_kernel(int Nparticles,
-                       int countOnes,
-                       int IszY,
-                       int Nfr,
-                       int k,
-                       long max_size,
-                       const double* arrayX,
-                       const double* arrayY,
-                       const double* objxy,
-                       const int* I,
-                       double* likelihood) {
-#pragma HLS INTERFACE m_axi port=arrayX offset=slave bundle=gmem0 max_widen_bitwidth=64
-#pragma HLS INTERFACE m_axi port=arrayY offset=slave bundle=gmem1 max_widen_bitwidth=64
-#pragma HLS INTERFACE m_axi port=objxy offset=slave bundle=gmem2 max_widen_bitwidth=64
-#pragma HLS INTERFACE m_axi port=I offset=slave bundle=gmem3 max_widen_bitwidth=32
-#pragma HLS INTERFACE m_axi port=likelihood offset=slave bundle=gmem4 max_widen_bitwidth=64
+void likelihood_kernel(int Nparticles, int IszY, int Nfr, int k, long max_size,
+                       const double* arrayX, const double* arrayY, const double* objxy,
+                       const int* I, double* likelihood) {
+
+#pragma HLS INTERFACE m_axi port=arrayX offset=slave bundle=gmem0
+#pragma HLS INTERFACE m_axi port=arrayY offset=slave bundle=gmem1
+#pragma HLS INTERFACE m_axi port=objxy offset=slave bundle=gmem2
+#pragma HLS INTERFACE m_axi port=I offset=slave bundle=gmem3
+#pragma HLS INTERFACE m_axi port=likelihood offset=slave bundle=gmem4
 
 #pragma HLS INTERFACE s_axilite port=Nparticles bundle=control
-#pragma HLS INTERFACE s_axilite port=countOnes bundle=control
 #pragma HLS INTERFACE s_axilite port=IszY bundle=control
 #pragma HLS INTERFACE s_axilite port=Nfr bundle=control
 #pragma HLS INTERFACE s_axilite port=k bundle=control
@@ -187,8 +163,6 @@ void likelihood_kernel(int Nparticles,
 #pragma HLS INTERFACE s_axilite port=likelihood bundle=control
 #pragma HLS INTERFACE s_axilite port=return bundle=control
 
-    assert(countOnes > 0 && "countOnes must be greater than 0");
-    assert(countOnes <= MAX_COUNT_ONES && "countOnes exceeds statically allocated MAX_COUNT_ONES!");
     assert(Nparticles > 0 && "Nparticles must be greater than 0");
 
     int buffer_objxy[MAX_COUNT_ONES * 2];
@@ -197,27 +171,19 @@ void likelihood_kernel(int Nparticles,
     int buffer_pixels[N_BUFFER_SIZE][MAX_COUNT_ONES];
     double buffer_likelihood[N_BUFFER_SIZE];
 
-    // partition for likelihood computation
-    #pragma HLS ARRAY_PARTITION variable=buffer_pixels cyclic factor=45 dim=2
+#pragma HLS ARRAY_PARTITION variable=buffer_pixels cyclic factor=23 dim=2
 
-    load_objxy(objxy, buffer_objxy, countOnes);
-    build_obj_offsets(buffer_objxy, buffer_objxy_offset, countOnes, IszY, Nfr);
+    load_objxy(objxy, buffer_objxy);
+    build_obj_offsets(buffer_objxy, buffer_objxy_offset, IszY, Nfr);
 
-Particle_loop:
+    Particle_loop:
     for (int base = 0; base < Nparticles; base += N_BUFFER_SIZE) {
-        // 1,000,000 max particles / 64 buffer size = 15625 iterations max
-#pragma HLS LOOP_TRIPCOUNT min=1 max=15625
-#pragma HLS LOOP_FLATTEN off
-        
-        // ensures no remaining particles are left uncalculated
-        int activeParticles = Nparticles - base;
-        if (activeParticles > N_BUFFER_SIZE) {
-            activeParticles = N_BUFFER_SIZE;
-        }
+        #pragma HLS LOOP_TRIPCOUNT min=1 max=15625
+        int activeParticles = (Nparticles - base > N_BUFFER_SIZE) ? N_BUFFER_SIZE : Nparticles - base;
 
         load_particles(arrayX, arrayY, buffer_idx_1D, base, activeParticles, IszY, Nfr, k);
-        load_pixels(buffer_idx_1D, buffer_objxy_offset, countOnes, max_size, I, buffer_pixels, activeParticles);
-        compute_likelihood(buffer_pixels, countOnes, buffer_likelihood, activeParticles);
+        load_pixels(buffer_idx_1D, buffer_objxy_offset, max_size, I, buffer_pixels, activeParticles);
+        compute_likelihood(buffer_pixels, buffer_likelihood, activeParticles);
         store_likelihood(likelihood, buffer_likelihood, base, activeParticles);
     }
 }
