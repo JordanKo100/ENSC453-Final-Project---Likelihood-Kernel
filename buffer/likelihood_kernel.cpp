@@ -9,7 +9,6 @@ static const double kPixelScaleNum = 256.0;
 static const double kPixelBiasNum = 41984.0;
 static const double kPixelDen = 50.0;
 
-// STAGE 1: Standard Sequential Load
 void load_pixels(const int* packed_I,
                  int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES],
                  int base, int activeParticles) {
@@ -26,7 +25,6 @@ void load_pixels(const int* packed_I,
     }
 }
 
-// STAGE 2: Simplified Sequential Compute
 void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES],
                         double buffer_likelihood[N_BUFFER_SIZE],
                         int activeParticles) {
@@ -48,7 +46,6 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES
     }
 }
 
-// STAGE 3: Standard Sequential Store
 void store_likelihood(double* likelihood,
                       const double buffer_likelihood[N_BUFFER_SIZE],
                       int base, int activeParticles) {

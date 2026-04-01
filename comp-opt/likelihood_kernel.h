@@ -2,8 +2,8 @@
 #define LIKELIHOOD_KERNEL_H
 
 // adjust for c-synth and estimate resource util and latency
-const int  MAX_NPARTICLES = 100000;
-const int N_BUFFER_SIZE = 256;
+const int  MAX_NPARTICLES = 3000000;
+const int N_BUFFER_SIZE = 128;
 
 #define PADDED_COUNT_ONES 80
 #define ACTUAL_COUNT_ONES 69

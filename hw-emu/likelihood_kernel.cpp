@@ -16,7 +16,6 @@ inline uint64_t double_to_bits(double val) {
     return conv.u;
 }
 
-// STAGE 1: Explicit 2D Load (Zero MUX Overhead)
 void load_packed_pixels_wide(const wide_t* packed_I,
                              int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES],
                              int base, int activeParticles) {
@@ -43,7 +42,6 @@ void load_packed_pixels_wide(const wide_t* packed_I,
     }
 }
 
-// STAGE 2: 64-Row Parallel Compute
 void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES],
                         double buffer_likelihood[N_BUFFER_SIZE],
                         int activeParticles) {
@@ -72,7 +70,8 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES
     }
 
     finalize: for (int i = 0; i < N_BUFFER_SIZE; i++) {
-        #pragma HLS UNROLL
+        #pragma HLS PIPELINE II=1
+        #pragma HLS UNROLL factor=8
         if (i < activeParticles) {
             buffer_likelihood[i] = scale * (double)particle_sums[i] - bias;
         } else {
@@ -81,7 +80,6 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES
     }
 }
 
-// STAGE 3: Store Results
 void store_likelihood_wide(wide_t* likelihood,
                            const double buffer_likelihood[N_BUFFER_SIZE],
                            int base, int activeParticles) {

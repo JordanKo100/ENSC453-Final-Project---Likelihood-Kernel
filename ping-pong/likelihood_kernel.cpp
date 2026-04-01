@@ -16,7 +16,6 @@ inline uint64_t double_to_bits(double val) {
     return conv.u;
 }
 
-// STAGE 1: Explicit 2D Load (Zero MUX Overhead)
 void load_packed_pixels_wide(const wide_t* packed_I,
                              int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES],
                              int base, int activeParticles) {
@@ -47,7 +46,6 @@ void load_packed_pixels_wide(const wide_t* packed_I,
     }
 }
 
-// STAGE 2: 64-Row Parallel Compute
 void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES],
                         double buffer_likelihood[N_BUFFER_SIZE],
                         int activeParticles) {
@@ -57,10 +55,10 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES
     const double bias = kPixelBiasNum / kPixelDen;
 
     int particle_sums[N_BUFFER_SIZE];
-    #pragma HLS ARRAY_PARTITION variable=particle_sums cyclic factor=16 dim=1
+    #pragma HLS ARRAY_PARTITION variable=particle_sums complete dim=1
 
     init_sums: for (int i = 0; i < N_BUFFER_SIZE; i++) {
-        #pragma HLS PIPELINE II=1
+        #pragma HLS UNROLL
         particle_sums[i] = 0;
     }
 
@@ -69,7 +67,7 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES
         #pragma HLS PIPELINE II=1
         
         parallel_particles: for (int i = 0; i < N_BUFFER_SIZE; i++) {
-            #pragma HLS UNROLL factor=16
+            #pragma HLS UNROLL
             if (i < activeParticles) {
                 // Reads 1 element from all 64 completely partitioned rows simultaneously
                 particle_sums[i] += buffer_pixels[i][j];
@@ -79,7 +77,7 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES
 
     finalize: for (int i = 0; i < N_BUFFER_SIZE; i++) {
         #pragma HLS PIPELINE II=1
-        #pragma HLS UNROLL factor=16
+        #pragma HLS UNROLL factor=8
         if (i < activeParticles) {
             buffer_likelihood[i] = scale * (double)particle_sums[i] - bias;
         } else {
@@ -88,7 +86,6 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES
     }
 }
 
-// STAGE 3: Store Results
 void store_likelihood_wide(wide_t* likelihood,
                            const double buffer_likelihood[N_BUFFER_SIZE],
                            int base, int activeParticles) {
@@ -115,17 +112,14 @@ void store_likelihood_wide(wide_t* likelihood,
     }
 }
 
-// TOP LEVEL TILE PROCESSOR
 void process_tile(const wide_t* packed_I, wide_t* likelihood, 
                   int base, int activeParticles) {
     #pragma HLS DATAFLOW
     int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES];
     double buffer_likelihood[N_BUFFER_SIZE];
 
-    // //  Complete dim=1 gives us 64 independent row BRAMs for the Compute phase.
-    // #pragma HLS ARRAY_PARTITION variable=buffer_pixels complete dim=1 
-
-    #pragma HLS ARRAY_PARTITION variable=buffer_pixels cyclic factor=16 dim=1
+    // //  Complete dim=1 gives us 128 independent row BRAMs for the Compute phase.
+    #pragma HLS ARRAY_PARTITION variable=buffer_pixels complete dim=1 
 
     // Cyclic 16 on dim=2 splits each row into 16 banks for the Load phase.
     #pragma HLS ARRAY_PARTITION variable=buffer_pixels cyclic factor=16 dim=2 

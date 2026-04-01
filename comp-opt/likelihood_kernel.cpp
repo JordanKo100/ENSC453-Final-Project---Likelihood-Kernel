@@ -9,7 +9,6 @@ static const double kPixelScaleNum = 256.0;
 static const double kPixelBiasNum = 41984.0;
 static const double kPixelDen = 50.0;
 
-// STAGE 1: Standard Sequential Load
 void load_pixels(const int* packed_I,
                  int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES],
                  int base, int activeParticles) {
@@ -26,7 +25,6 @@ void load_pixels(const int* packed_I,
     }
 }
 
-// STAGE 2: N_BUFFER_SIZE-Row Parallel Compute
 void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES],
                         double buffer_likelihood[N_BUFFER_SIZE],
                         int activeParticles) {
@@ -39,8 +37,7 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES
     #pragma HLS ARRAY_PARTITION variable=particle_sums complete dim=1
 
     init_sums: for (int i = 0; i < N_BUFFER_SIZE; i++) {
-        #pragma HLS PIPELINE II=1
-        #pragma HLS UNROLL factor=8
+        #pragma HLS UNROLL
         particle_sums[i] = 0;
     }
 
@@ -48,7 +45,7 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES
         #pragma HLS PIPELINE II=1
         
         parallel_particles: for (int i = 0; i < N_BUFFER_SIZE; i++) {
-            #pragma HLS UNROLL factor=8
+            #pragma HLS UNROLL
             if (i < activeParticles) {
                 particle_sums[i] += buffer_pixels[i][j];
             }
@@ -57,7 +54,6 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES
 
     finalize: for (int i = 0; i < N_BUFFER_SIZE; i++) {
         #pragma HLS PIPELINE II=1
-        #pragma HLS UNROLL factor=8
         if (i < activeParticles) {
             buffer_likelihood[i] = scale * (double)particle_sums[i] - bias;
         } else {
@@ -66,7 +62,6 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES
     }
 }
 
-// STAGE 3: Standard Sequential Store
 void store_likelihood(double* likelihood,
                       const double buffer_likelihood[N_BUFFER_SIZE],
                       int base, int activeParticles) {
@@ -96,9 +91,8 @@ void likelihood_kernel(int Nparticles,
     int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES];
     double buffer_likelihood[N_BUFFER_SIZE];
 
-    #pragma HLS BIND_STORAGE variable=buffer_pixels type=ram_2p impl=bram
+    #pragma HLS ARRAY_PARTITION variable=buffer_pixels complete dim=1 
 
-    #pragma HLS ARRAY_PARTITION variable=buffer_pixels cyclic factor=8 dim=1 
 
 Particle_loop:
     for (int base = 0; base < Nparticles; base += N_BUFFER_SIZE) {

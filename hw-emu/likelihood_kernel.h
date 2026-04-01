@@ -9,7 +9,7 @@
 #define DOUBLES_PER_WORD (AXI_BITS / DOUBLE_BITS) // 8 doubles
 #define INTS_PER_WORD (AXI_BITS / INT_BITS)       // 16 ints
 
-const int NUM_PARTICLES = 1000; 
+const int NUM_PARTICLES = 256; 
 const int N_BUFFER_SIZE = 128;
 
 #define PADDED_COUNT_ONES 80
