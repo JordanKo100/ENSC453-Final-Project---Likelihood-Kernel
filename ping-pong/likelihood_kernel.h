@@ -10,7 +10,7 @@
 #define INTS_PER_WORD (AXI_BITS / INT_BITS)       // 16 ints
 
 const int MAX_NPARTICLES = 3000000;
-const int N_BUFFER_SIZE = 256;
+const int N_BUFFER_SIZE = 128;
 
 #define PADDED_COUNT_ONES 80
 #define ACTUAL_COUNT_ONES 69
