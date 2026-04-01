@@ -242,4 +242,31 @@ bool run_case(const char* label,
 
     std::cout << label << "  Nparticles = " << Nparticles
               << "  elapsed = " << elapsed.count() << " s"
-              << "  max_abs
+              << "  max_abs_err = " << std::setprecision(12) << max_abs_err << "\n";
+    return pass;
+}
+
+int main() {
+    std::vector<double> objxy(PADDED_COUNT_ONES * 2, 0.0);
+    std::vector<int> I(TB_MAX_SIZE, 0);
+
+    build_objxy_disk(objxy);
+
+    for (long i = 0; i < TB_MAX_SIZE; i++) {
+        I[i] = 100 + (int)(i % 129);
+    }
+
+    bool pass = true;
+    
+    pass &= run_case("massive_interior_case", MAX_NPARTICLES, TB_MAX_SIZE, objxy.data(), I.data());
+    pass &= run_case("small_boundary_case", 65, TB_MAX_SIZE, objxy.data(), I.data());
+    pass &= run_case("clamp_case", 65, 37, objxy.data(), I.data());
+
+    if (pass) {
+        std::cout << "TEST PASSED\n";
+        return 0;
+    }
+
+    std::cout << "TEST FAILED\n";
+    return 1;
+}
