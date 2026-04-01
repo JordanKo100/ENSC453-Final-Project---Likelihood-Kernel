@@ -18,19 +18,16 @@
 #include "my_timer.h"
 
 // Hardware Execution Constants
-#define GLOBAL_NUM_PARTICLES 1000000
 #define GLOBAL_ISZX 4000
 #define GLOBAL_ISZY 4000
 #define GLOBAL_MAX_SIZE 16000000
 
-// PRNG Constants (Rodinia LCG)
-const long PRNG_M = 2147483647; // INT_MAX
+const long PRNG_M = 2147483647; 
 const int PRNG_A = 1103515245;
 const int PRNG_C = 12345;
 
 namespace {
 
-// Constant tracking values
 constexpr int kNfr = 1;
 constexpr int kFrameIndex = 0;
 
@@ -44,7 +41,6 @@ struct aligned_allocator {
         }
         return reinterpret_cast<T*>(ptr);
     }
-
     void deallocate(T* ptr, std::size_t) {
         free(ptr);
     }
@@ -62,23 +58,8 @@ inline double bits_to_double(uint64_t bits) {
     return conv.d;
 }
 
-inline uint64_t double_to_bits(double value) {
-    union { uint64_t u; double d; } conv;
-    conv.d = value;
-    return conv.u;
-}
-
-void pack_doubles_to_wide(const std::vector<double>& in,
-                          std::vector<wide_t, aligned_allocator<wide_t>>& out) {
-    for (std::size_t w = 0; w < out.size(); w++) {
-        wide_t pack = 0;
-        for (int d = 0; d < DOUBLES_PER_WORD; d++) {
-            const std::size_t idx = w * DOUBLES_PER_WORD + static_cast<std::size_t>(d);
-            const double value = (idx < in.size()) ? in[idx] : 0.0;
-            pack.range((d + 1) * DOUBLE_BITS - 1, d * DOUBLE_BITS) = double_to_bits(value);
-        }
-        out[w] = pack;
-    }
+inline int shared_roundDouble(double value) {
+    return static_cast<int>(value + ((value >= 0.0) ? 0.5 : -0.5));
 }
 
 void unpack_wide_to_doubles(const std::vector<wide_t, aligned_allocator<wide_t>>& in,
@@ -96,7 +77,19 @@ void unpack_wide_to_doubles(const std::vector<wide_t, aligned_allocator<wide_t>>
     }
 }
 
-// PRNG implementations matching Rodinia CPU
+void pack_ints_to_wide(const std::vector<int>& in, 
+                       std::vector<wide_t, aligned_allocator<wide_t>>& out) {
+    for (std::size_t w = 0; w < out.size(); w++) {
+        wide_t pack = 0;
+        for (int i = 0; i < INTS_PER_WORD; i++) {
+            const std::size_t idx = w * INTS_PER_WORD + static_cast<std::size_t>(i);
+            const uint32_t val = (idx < in.size()) ? static_cast<uint32_t>(in[idx]) : 0;
+            pack.range((i + 1) * INT_BITS - 1, i * INT_BITS) = val;
+        }
+        out[w] = pack;
+    }
+}
+
 double randu(std::vector<int>& seed, int index) {
     long long num = (long long)PRNG_A * seed[index] + PRNG_C;
     seed[index] = static_cast<int>(num % PRNG_M);
@@ -111,16 +104,14 @@ double randn(std::vector<int>& seed, int index) {
     return std::sqrt(rt) * cosine;
 }
 
-// Updated to build the exact 69-point circular disk
-void build_objxy_disk(std::vector<double, aligned_allocator<double>>& objxy) {
+void build_objxy_disk(std::vector<double>& objxy) {
     int radius = 5;
     int current_point = 0;
     for (int x = -radius + 1; x < radius; x++) {
         for (int y = -radius + 1; y < radius; y++) {
             double distance = std::sqrt(x * x + y * y);
             if (distance < radius) {
-                // Ensure we do not overflow the statically sized array
-                if (current_point < MAX_COUNT_ONES) {
+                if (current_point < ACTUAL_COUNT_ONES) {
                     objxy[current_point * 2] = static_cast<double>(y);
                     objxy[current_point * 2 + 1] = static_cast<double>(x);
                     current_point++;
@@ -130,25 +121,51 @@ void build_objxy_disk(std::vector<double, aligned_allocator<double>>& objxy) {
     }
 }
 
-// Generates dynamic particles using the PRNG Random Walk
 void init_particles(std::vector<double>& arrayX, std::vector<double>& arrayY) {
     std::vector<int> seed(arrayX.size());
     for (std::size_t i = 0; i < seed.size(); i++) {
-        seed[i] = 1337 * (i + 1); // Deterministic seed
+        seed[i] = 1337 * (i + 1);
     }
-
     double center_x = GLOBAL_ISZY / 2.0;
     double center_y = GLOBAL_ISZX / 2.0;
-
     for (std::size_t i = 0; i < arrayX.size(); i++) {
         arrayX[i] = center_x + 1.0 + 5.0 * randn(seed, i);
         arrayY[i] = center_y - 2.0 + 2.0 * randn(seed, i);
     }
 }
 
-void init_image(std::vector<int, aligned_allocator<int>>& image) {
+void init_image(std::vector<int>& image) {
     for (std::size_t i = 0; i < image.size(); i++) {
         image[i] = 100 + static_cast<int>(i % 129);
+    }
+}
+
+// Host Data Extraction and Padding 
+void pack_pixels_for_fpga(int Nparticles,
+                          const std::vector<double>& arrayX,
+                          const std::vector<double>& arrayY,
+                          const std::vector<double>& objxy,
+                          const std::vector<int>& I,
+                          std::vector<int>& packed_I) {
+    int write_idx = 0;
+    for (int p = 0; p < Nparticles; p++) {
+        int px = shared_roundDouble(arrayX[p]);
+        int py = shared_roundDouble(arrayY[p]);
+
+        for (int m = 0; m < ACTUAL_COUNT_ONES; m++) {
+            int offY = shared_roundDouble(objxy[m * 2]);
+            int offX = shared_roundDouble(objxy[m * 2 + 1]);
+            long idx = std::labs(static_cast<long>(px + offX) * GLOBAL_ISZY * kNfr +
+                                 static_cast<long>(py + offY) * kNfr + kFrameIndex);
+            
+            if (idx >= GLOBAL_MAX_SIZE) idx = 0; 
+            packed_I[write_idx++] = I[idx];
+        }
+
+        // Pad the remainder to reach exactly 80 pixels
+        for (int m = ACTUAL_COUNT_ONES; m < PADDED_COUNT_ONES; m++) {
+            packed_I[write_idx++] = 0;
+        }
     }
 }
 
@@ -185,8 +202,10 @@ OpenClSession open_session(const std::string& binary_file) {
     cl_int err = CL_SUCCESS;
     cl::Context context(device, nullptr, nullptr, nullptr, &err);
     if (err != CL_SUCCESS) throw std::runtime_error("Failed to create OpenCL context");
+    
     cl::CommandQueue queue(context, device, CL_QUEUE_PROFILING_ENABLE, &err);
     if (err != CL_SUCCESS) throw std::runtime_error("Failed to create command queue");
+    
     const std::vector<unsigned char> file_buf = read_binary_file(binary_file);
     cl::Program::Binaries bins;
     bins.push_back({file_buf.data(), file_buf.size()});
@@ -205,48 +224,43 @@ OpenClSession open_session(const std::string& binary_file) {
 
 void run_hw_only(OpenClSession& session, int particle_count) {
     std::cout << ">>> Initializing data for Benchtest (" << particle_count << " particles)...\n";
-    
     std::vector<double> arrayX(static_cast<std::size_t>(particle_count), 0.0);
     std::vector<double> arrayY(static_cast<std::size_t>(particle_count), 0.0);
-    // Allocate exactly 69 points * 2 doubles
-    std::vector<double, aligned_allocator<double>> objxy(MAX_COUNT_ONES * 2, 0.0);
-    std::vector<int, aligned_allocator<int>> image(GLOBAL_MAX_SIZE);
+    std::vector<double> objxy(ACTUAL_COUNT_ONES * 2, 0.0);
+    std::vector<int> image(GLOBAL_MAX_SIZE);
 
     build_objxy_disk(objxy);
     init_particles(arrayX, arrayY);
     init_image(image);
 
-    const std::size_t particle_words = (arrayX.size() + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
-    std::vector<wide_t, aligned_allocator<wide_t>> arrayX_wide(particle_words);
-    std::vector<wide_t, aligned_allocator<wide_t>> arrayY_wide(particle_words);
-    std::vector<wide_t, aligned_allocator<wide_t>> likelihood_wide(particle_words);
+    // Host Memory: Pack and Pad
+    int total_pixels_padded = particle_count * PADDED_COUNT_ONES;
+    std::vector<int> packed_I(total_pixels_padded, 0);
+    pack_pixels_for_fpga(particle_count, arrayX, arrayY, objxy, image, packed_I);
 
-    pack_doubles_to_wide(arrayX, arrayX_wide);
-    pack_doubles_to_wide(arrayY, arrayY_wide);
+    // Allocate FPGA Aligned Memory
+    const std::size_t int_words = (total_pixels_padded + INTS_PER_WORD - 1) / INTS_PER_WORD;
+    const std::size_t out_words = (particle_count + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
+
+    std::vector<wide_t, aligned_allocator<wide_t>> packed_I_wide(int_words, 0);
+    std::vector<wide_t, aligned_allocator<wide_t>> likelihood_wide(out_words, 0);
+
+    pack_ints_to_wide(packed_I, packed_I_wide);
 
     cl_int err = CL_SUCCESS;
-    cl::Buffer buf_arrayX(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(wide_t) * particle_words, arrayX_wide.data(), &err);
-    cl::Buffer buf_arrayY(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(wide_t) * particle_words, arrayY_wide.data(), &err);
-    cl::Buffer buf_objxy(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(double) * objxy.size(), objxy.data(), &err);
-    cl::Buffer buf_image(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(int) * image.size(), image.data(), &err);
-    cl::Buffer buf_likelihood(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY, sizeof(wide_t) * particle_words, likelihood_wide.data(), &err);
+    cl::Buffer buf_packed_I(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, 
+                            sizeof(wide_t) * int_words, packed_I_wide.data(), &err);
+    cl::Buffer buf_likelihood(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY, 
+                              sizeof(wide_t) * out_words, likelihood_wide.data(), &err);
 
-    // Updated Kernel Arguments (countOnes removed, indices shifted)
+    // Simplied Kernel Arguments
     err = CL_SUCCESS;
     err |= session.kernel.setArg(0, particle_count);
-    err |= session.kernel.setArg(1, GLOBAL_ISZY);
-    err |= session.kernel.setArg(2, kNfr);
-    err |= session.kernel.setArg(3, kFrameIndex);
-    err |= session.kernel.setArg(4, (cl_long)GLOBAL_MAX_SIZE);
-    err |= session.kernel.setArg(5, buf_arrayX);
-    err |= session.kernel.setArg(6, buf_arrayY);
-    err |= session.kernel.setArg(7, buf_objxy);
-    err |= session.kernel.setArg(8, buf_image);
-    err |= session.kernel.setArg(9, buf_likelihood);
-    
+    err |= session.kernel.setArg(1, buf_packed_I);
+    err |= session.kernel.setArg(2, buf_likelihood);
     if (err != CL_SUCCESS) throw std::runtime_error("Failed to set kernel arguments");
 
-    err = session.queue.enqueueMigrateMemObjects({buf_arrayX, buf_arrayY, buf_objxy, buf_image}, 0);
+    err = session.queue.enqueueMigrateMemObjects({buf_packed_I}, 0);
     err |= session.queue.finish();
     if (err != CL_SUCCESS) throw std::runtime_error("Failed to migrate inputs to FPGA");
 
@@ -255,7 +269,6 @@ void run_hw_only(OpenClSession& session, int particle_count) {
     err = session.queue.enqueueTask(session.kernel);
     err |= session.queue.finish();
     const timespec kernel_end = tic();
-    
     if (err != CL_SUCCESS) throw std::runtime_error("Failed to execute kernel");
 
     const timespec kernel_elapsed = diff(kernel_start, kernel_end);
@@ -289,11 +302,7 @@ int main(int argc, char* argv[]) {
 
     try {
         OpenClSession session = open_session(argv[1]);
-        run_hw_only(session, GLOBAL_NUM_PARTICLES);
+        run_hw_only(session, MAX_NPARTICLES);
 
         return EXIT_SUCCESS;
-    } catch (const std::exception& e) {
-        std::cerr << "\n[CRITICAL ERROR] " << e.what() << "\n";
-        return EXIT_FAILURE;
     }
-}

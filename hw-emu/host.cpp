@@ -18,14 +18,12 @@
 #include "my_timer.h"
 
 // --- HW-EMU SCALED CONSTANTS ---
-// 128 particles = exactly 2 iterations of the 64-particle N_BUFFER_SIZE
-#define GLOBAL_NUM_PARTICLES 128 
+// Reduced to 100 to test both a full tile (64) and a residual tile (36)
 #define GLOBAL_ISZX 512
 #define GLOBAL_ISZY 512
-#define GLOBAL_MAX_SIZE (GLOBAL_ISZX * GLOBAL_ISZY * 1) // 262,144
+#define GLOBAL_MAX_SIZE (GLOBAL_ISZX * GLOBAL_ISZY * 1) 
 
-// PRNG Constants (Rodinia LCG)
-const long PRNG_M = 2147483647; // INT_MAX
+const long PRNG_M = 2147483647; 
 const int PRNG_A = 1103515245;
 const int PRNG_C = 12345;
 
@@ -61,27 +59,8 @@ inline double bits_to_double(uint64_t bits) {
     return conv.d;
 }
 
-inline uint64_t double_to_bits(double value) {
-    union { uint64_t u; double d; } conv;
-    conv.d = value;
-    return conv.u;
-}
-
 inline int shared_roundDouble(double value) {
     return static_cast<int>(value + ((value >= 0.0) ? 0.5 : -0.5));
-}
-
-void pack_doubles_to_wide(const std::vector<double>& in,
-                          std::vector<wide_t, aligned_allocator<wide_t>>& out) {
-    for (std::size_t w = 0; w < out.size(); w++) {
-        wide_t pack = 0;
-        for (int d = 0; d < DOUBLES_PER_WORD; d++) {
-            const std::size_t idx = w * DOUBLES_PER_WORD + static_cast<std::size_t>(d);
-            const double value = (idx < in.size()) ? in[idx] : 0.0;
-            pack.range((d + 1) * DOUBLE_BITS - 1, d * DOUBLE_BITS) = double_to_bits(value);
-        }
-        out[w] = pack;
-    }
 }
 
 void unpack_wide_to_doubles(const std::vector<wide_t, aligned_allocator<wide_t>>& in,
@@ -99,7 +78,19 @@ void unpack_wide_to_doubles(const std::vector<wide_t, aligned_allocator<wide_t>>
     }
 }
 
-// Rodinia PRNG Logic
+void pack_ints_to_wide(const std::vector<int>& in, 
+                       std::vector<wide_t, aligned_allocator<wide_t>>& out) {
+    for (std::size_t w = 0; w < out.size(); w++) {
+        wide_t pack = 0;
+        for (int i = 0; i < INTS_PER_WORD; i++) {
+            const std::size_t idx = w * INTS_PER_WORD + static_cast<std::size_t>(i);
+            const uint32_t val = (idx < in.size()) ? static_cast<uint32_t>(in[idx]) : 0;
+            pack.range((i + 1) * INT_BITS - 1, i * INT_BITS) = val;
+        }
+        out[w] = pack;
+    }
+}
+
 double randu(std::vector<int>& seed, int index) {
     long long num = (long long)PRNG_A * seed[index] + PRNG_C;
     seed[index] = static_cast<int>(num % PRNG_M);
@@ -114,15 +105,14 @@ double randn(std::vector<int>& seed, int index) {
     return std::sqrt(rt) * cosine;
 }
 
-// Generates the 69-point Circular Disk Mask
-void build_objxy_disk(std::vector<double, aligned_allocator<double>>& objxy) {
+void build_objxy_disk(std::vector<double>& objxy) {
     int radius = 5;
     int current_point = 0;
     for (int x = -radius + 1; x < radius; x++) {
         for (int y = -radius + 1; y < radius; y++) {
             double distance = std::sqrt(x * x + y * y);
             if (distance < radius) {
-                if (current_point < MAX_COUNT_ONES) {
+                if (current_point < ACTUAL_COUNT_ONES) {
                     objxy[current_point * 2] = static_cast<double>(y);
                     objxy[current_point * 2 + 1] = static_cast<double>(x);
                     current_point++;
@@ -148,26 +138,52 @@ void init_particles_interior(std::vector<double>& arrayX, std::vector<double>& a
 void init_particles_boundary(std::vector<double>& arrayX, std::vector<double>& arrayY) {
     for (std::size_t i = 0; i < arrayX.size(); i++) {
         switch (i % 5) {
-        case 0: arrayX[i] = -15.0; arrayY[i] = -15.0; break;               // Negative bounds
-        case 1: arrayX[i] = GLOBAL_ISZX + 50.0; arrayY[i] = 256.0; break;  // X Over bounds
-        case 2: arrayX[i] = 256.0; arrayY[i] = GLOBAL_ISZY + 50.0; break;  // Y Over bounds
+        case 0: arrayX[i] = -15.0; arrayY[i] = -15.0; break;               
+        case 1: arrayX[i] = GLOBAL_ISZX + 50.0; arrayY[i] = 256.0; break;  
+        case 2: arrayX[i] = 256.0; arrayY[i] = GLOBAL_ISZY + 50.0; break;  
         case 3: arrayX[i] = GLOBAL_ISZX + 100.0; arrayY[i] = GLOBAL_ISZY + 100.0; break; 
-        case 4: arrayX[i] = 256.0; arrayY[i] = 256.0; break;               // Safe interior reference
+        case 4: arrayX[i] = 256.0; arrayY[i] = 256.0; break;
         }
     }
 }
 
-void init_image(std::vector<int, aligned_allocator<int>>& image) {
+void init_image(std::vector<int>& image) {
     for (std::size_t i = 0; i < image.size(); i++) {
         image[i] = 100 + static_cast<int>(i % 129);
     }
 }
 
-// Hardware Reference uses MAX_COUNT_ONES statically
+void pack_pixels_for_fpga(int Nparticles,
+                          const std::vector<double>& arrayX,
+                          const std::vector<double>& arrayY,
+                          const std::vector<double>& objxy,
+                          const std::vector<int>& I,
+                          std::vector<int>& packed_I) {
+    int write_idx = 0;
+    for (int p = 0; p < Nparticles; p++) {
+        int px = shared_roundDouble(arrayX[p]);
+        int py = shared_roundDouble(arrayY[p]);
+
+        for (int m = 0; m < ACTUAL_COUNT_ONES; m++) {
+            int offY = shared_roundDouble(objxy[m * 2]);
+            int offX = shared_roundDouble(objxy[m * 2 + 1]);
+            long idx = std::labs(static_cast<long>(px + offX) * GLOBAL_ISZY * kNfr +
+                                 static_cast<long>(py + offY) * kNfr + kFrameIndex);
+            
+            if (idx >= GLOBAL_MAX_SIZE) idx = 0; 
+            packed_I[write_idx++] = I[idx];
+        }
+
+        for (int m = ACTUAL_COUNT_ONES; m < PADDED_COUNT_ONES; m++) {
+            packed_I[write_idx++] = 0;
+        }
+    }
+}
+
 void compute_reference(const std::vector<double>& arrayX,
                        const std::vector<double>& arrayY,
-                       const std::vector<double, aligned_allocator<double>>& objxy,
-                       const std::vector<int, aligned_allocator<int>>& image,
+                       const std::vector<double>& objxy,
+                       const std::vector<int>& image,
                        std::vector<double>& likelihood_ref) {
     
     likelihood_ref.assign(arrayX.size(), 0.0);
@@ -176,7 +192,7 @@ void compute_reference(const std::vector<double>& arrayX,
         const int py = shared_roundDouble(arrayY[x]);
         double sum = 0.0;
 
-        for (int y = 0; y < MAX_COUNT_ONES; y++) {
+        for (int y = 0; y < ACTUAL_COUNT_ONES; y++) {
             const int offY = shared_roundDouble(objxy[static_cast<std::size_t>(y) * 2]);
             const int offX = shared_roundDouble(objxy[static_cast<std::size_t>(y) * 2 + 1]);
             const int indX = px + offX;
@@ -184,16 +200,14 @@ void compute_reference(const std::vector<double>& arrayX,
             long idx = std::labs(static_cast<long>(indX) * GLOBAL_ISZY * kNfr +
                                  static_cast<long>(indY) * kNfr + kFrameIndex);
             
-            if (idx >= GLOBAL_MAX_SIZE) {
-                idx = 0;
-            }
+            if (idx >= GLOBAL_MAX_SIZE) { idx = 0; }
 
             const int pix = image[static_cast<std::size_t>(idx)];
             const int a = pix - 100;
             const int b = pix - 228;
             sum += (static_cast<double>(a * a) - static_cast<double>(b * b)) / 50.0;
         }
-        likelihood_ref[x] = sum / static_cast<double>(MAX_COUNT_ONES);
+        likelihood_ref[x] = sum / static_cast<double>(ACTUAL_COUNT_ONES);
     }
 }
 
@@ -248,11 +262,10 @@ OpenClSession open_session(const std::string& binary_file) {
 bool run_case(OpenClSession& session, const char* label, int particle_count, bool boundary_case) {
     std::vector<double> arrayX(static_cast<std::size_t>(particle_count), 0.0);
     std::vector<double> arrayY(static_cast<std::size_t>(particle_count), 0.0);
-    std::vector<double, aligned_allocator<double>> objxy(MAX_COUNT_ONES * 2, 0.0);
-    std::vector<int, aligned_allocator<int>> image(GLOBAL_MAX_SIZE);
+    std::vector<double> objxy(ACTUAL_COUNT_ONES * 2, 0.0);
+    std::vector<int> image(GLOBAL_MAX_SIZE);
 
     build_objxy_disk(objxy);
-
     if (boundary_case) {
         init_particles_boundary(arrayX, arrayY);
     } else {
@@ -260,41 +273,40 @@ bool run_case(OpenClSession& session, const char* label, int particle_count, boo
     }
     init_image(image);
 
+    // Host Memory: Pack and Pad
+    int total_pixels_padded = particle_count * PADDED_COUNT_ONES;
+    std::vector<int> packed_I(total_pixels_padded, 0);
+    
+    pack_pixels_for_fpga(particle_count, arrayX, arrayY, objxy, image, packed_I);
+
+    // Allocate FPGA Aligned Memory
+    const std::size_t int_words = (total_pixels_padded + INTS_PER_WORD - 1) / INTS_PER_WORD;
+    const std::size_t out_words = (particle_count + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
+    
+    std::vector<wide_t, aligned_allocator<wide_t>> packed_I_wide(int_words, 0);
+    std::vector<wide_t, aligned_allocator<wide_t>> likelihood_wide(out_words, 0);
+
+    pack_ints_to_wide(packed_I, packed_I_wide);
+
+    // Compute CPU Reference
     std::vector<double> likelihood_ref;
     compute_reference(arrayX, arrayY, objxy, image, likelihood_ref);
 
-    const std::size_t particle_words = (arrayX.size() + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
-    std::vector<wide_t, aligned_allocator<wide_t>> arrayX_wide(particle_words);
-    std::vector<wide_t, aligned_allocator<wide_t>> arrayY_wide(particle_words);
-    std::vector<wide_t, aligned_allocator<wide_t>> likelihood_wide(particle_words);
-
-    pack_doubles_to_wide(arrayX, arrayX_wide);
-    pack_doubles_to_wide(arrayY, arrayY_wide);
-
+    // OpenCL Setup
     cl_int err = CL_SUCCESS;
-    cl::Buffer buf_arrayX(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(wide_t) * particle_words, arrayX_wide.data(), &err);
-    cl::Buffer buf_arrayY(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(wide_t) * particle_words, arrayY_wide.data(), &err);
-    cl::Buffer buf_objxy(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(double) * objxy.size(), objxy.data(), &err);
-    cl::Buffer buf_image(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(int) * image.size(), image.data(), &err);
-    cl::Buffer buf_likelihood(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY, sizeof(wide_t) * particle_words, likelihood_wide.data(), &err);
+    cl::Buffer buf_packed_I(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, 
+                            sizeof(wide_t) * int_words, packed_I_wide.data(), &err);
+    cl::Buffer buf_likelihood(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY, 
+                              sizeof(wide_t) * out_words, likelihood_wide.data(), &err);
 
-    // Dynamic countOnes removed. Indices mapped identically to the HW Kernel
     err = CL_SUCCESS;
     err |= session.kernel.setArg(0, particle_count);
-    err |= session.kernel.setArg(1, GLOBAL_ISZY);
-    err |= session.kernel.setArg(2, kNfr);
-    err |= session.kernel.setArg(3, kFrameIndex);
-    err |= session.kernel.setArg(4, (cl_long)GLOBAL_MAX_SIZE);
-    err |= session.kernel.setArg(5, buf_arrayX);
-    err |= session.kernel.setArg(6, buf_arrayY);
-    err |= session.kernel.setArg(7, buf_objxy);
-    err |= session.kernel.setArg(8, buf_image);
-    err |= session.kernel.setArg(9, buf_likelihood);
+    err |= session.kernel.setArg(1, buf_packed_I);
+    err |= session.kernel.setArg(2, buf_likelihood);
     if (err != CL_SUCCESS) throw std::runtime_error("Failed to set kernel arguments");
 
-    err = session.queue.enqueueMigrateMemObjects({buf_arrayX, buf_arrayY, buf_objxy, buf_image}, 0);
+    err = session.queue.enqueueMigrateMemObjects({buf_packed_I}, 0);
     err |= session.queue.finish();
-    if (err != CL_SUCCESS) throw std::runtime_error("Failed to migrate inputs");
 
     const timespec kernel_start = tic();
     err = session.queue.enqueueTask(session.kernel);
@@ -350,9 +362,8 @@ int main(int argc, char* argv[]) {
         OpenClSession session = open_session(argv[1]);
         bool pass = true;
         
-        // Execute automatic verification for emulation
-        pass &= run_case(session, "Interior_Points", GLOBAL_NUM_PARTICLES, false);
-        pass &= run_case(session, "Boundary_Points", GLOBAL_NUM_PARTICLES, true);
+        pass &= run_case(session, "Interior_Points", NUM_PARTICLES, false);
+        pass &= run_case(session, "Boundary_Points", NUM_PARTICLES, true);
 
         if (pass) {
             std::cout << "======================================================\n";

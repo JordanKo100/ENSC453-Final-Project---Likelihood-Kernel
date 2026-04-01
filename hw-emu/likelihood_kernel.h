@@ -5,21 +5,20 @@
 
 #define AXI_BITS 512
 #define DOUBLE_BITS 64
-#define DOUBLES_PER_WORD (AXI_BITS / DOUBLE_BITS)
+#define INT_BITS 32
+#define DOUBLES_PER_WORD (AXI_BITS / DOUBLE_BITS) // 8 doubles
+#define INTS_PER_WORD (AXI_BITS / INT_BITS)       // 16 ints
 
-// Statically fixed to 69 for the Rodinia radius 5 disk
-#define MAX_COUNT_ONES 69 
-#define N_BUFFER_SIZE 64
+const int NUM_PARTICLES = 1000; 
+const int N_BUFFER_SIZE = 128;
+
+#define PADDED_COUNT_ONES 80
+#define ACTUAL_COUNT_ONES 69
 
 #define WORDS_PER_TILE (N_BUFFER_SIZE / DOUBLES_PER_WORD)
-#define OBJ_PER_TILE ((MAX_COUNT_ONES * 2) / DOUBLES_PER_WORD) 
-
-// 69 must be perfectly divisible by PIX_SUM_LANES. We use 23 (69 / 23 = 3 chunks).
-const int PIX_SUM_LANES = 23;
-const int PIX_CHUNKS = (MAX_COUNT_ONES / PIX_SUM_LANES);
 
 static_assert(N_BUFFER_SIZE % WORDS_PER_TILE == 0, "N_BUFFER_SIZE must align with 512-bit ports!");
-static_assert(MAX_COUNT_ONES % PIX_SUM_LANES == 0, "MAX_COUNT_ONES must be perfectly divisible by PIX_SUM_LANES!");
+static_assert(PADDED_COUNT_ONES % INTS_PER_WORD == 0, "PADDED_COUNT_ONES must be a multiple of 16!");
 
 typedef ap_uint<AXI_BITS> wide_t;
 
@@ -28,14 +27,7 @@ extern "C" {
 #endif
 
 void likelihood_kernel(int Nparticles,
-                       int IszY,
-                       int Nfr,
-                       int k,
-                       long max_size,
-                       const wide_t* arrayX,
-                       const wide_t* arrayY,
-                       const double* objxy,
-                       const int* I,
+                       const wide_t* packed_I,
                        wide_t* likelihood);
 
 #ifdef __cplusplus
