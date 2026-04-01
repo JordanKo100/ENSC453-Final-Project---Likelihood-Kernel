@@ -335,8 +335,8 @@ int main(int argc, char* argv[]) {
     }
 
     try {
-        // Allows you to override MAX_NPARTICLES via terminal, e.g. ./likelihood my_xclbin.xclbin 3000000
-        const int particle_count = (argc == 3) ? parse_particle_count(argv[2]) : MAX_NPARTICLES;
+        // Allows you to override NUM_NPARTICLES via terminal, e.g. ./likelihood my_xclbin.xclbin 3000000
+        const int particle_count = (argc == 3) ? parse_particle_count(argv[2]) : NUM_NPARTICLES;
         
         OpenClSession session = open_session(argv[1]);
         run_hw_only(session, particle_count);

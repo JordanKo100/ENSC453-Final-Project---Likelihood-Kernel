@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #define CL_HPP_TARGET_OPENCL_VERSION 120
 #define CL_HPP_MINIMUM_OPENCL_VERSION 120
@@ -19,11 +20,13 @@
 
 // --- HW-EMU SCALED CONSTANTS ---
 // Reduced to 100 to test both a full tile (64) and a residual tile (36)
+#define NUM_PARTICLES 100
 #define GLOBAL_ISZX 512
 #define GLOBAL_ISZY 512
 #define GLOBAL_MAX_SIZE (GLOBAL_ISZX * GLOBAL_ISZY * 1) 
+#define PARTICLE_CHUNK_SIZE 64 // Matches N_BUFFER_SIZE to test chunking logic in emulation
 
-const long PRNG_M = 2147483647; 
+const long PRNG_M = 2147483647;
 const int PRNG_A = 1103515245;
 const int PRNG_C = 12345;
 
@@ -78,19 +81,6 @@ void unpack_wide_to_doubles(const std::vector<wide_t, aligned_allocator<wide_t>>
     }
 }
 
-void pack_ints_to_wide(const std::vector<int>& in, 
-                       std::vector<wide_t, aligned_allocator<wide_t>>& out) {
-    for (std::size_t w = 0; w < out.size(); w++) {
-        wide_t pack = 0;
-        for (int i = 0; i < INTS_PER_WORD; i++) {
-            const std::size_t idx = w * INTS_PER_WORD + static_cast<std::size_t>(i);
-            const uint32_t val = (idx < in.size()) ? static_cast<uint32_t>(in[idx]) : 0;
-            pack.range((i + 1) * INT_BITS - 1, i * INT_BITS) = val;
-        }
-        out[w] = pack;
-    }
-}
-
 double randu(std::vector<int>& seed, int index) {
     long long num = (long long)PRNG_A * seed[index] + PRNG_C;
     seed[index] = static_cast<int>(num % PRNG_M);
@@ -128,11 +118,7 @@ void init_particles(std::vector<double>& arrayX, std::vector<double>& arrayY) {
         seed[i] = 1337 * (i + 1);
     }
 
-    // SCATTERED WORKLOAD: 
-    // Distribute uniformly across the entire 4000x4000 image to force cache misses.
     for (std::size_t i = 0; i < arrayX.size(); i++) {
-        // randu() returns a float between 0.0 and 1.0. 
-        // Multiplying by GLOBAL_ISZY/X spreads them across the full bounds.
         arrayX[i] = randu(seed, static_cast<int>(i)) * static_cast<double>(GLOBAL_ISZY);
         arrayY[i] = randu(seed, static_cast<int>(i)) * static_cast<double>(GLOBAL_ISZX);
     }
@@ -144,7 +130,7 @@ void init_particles_boundary(std::vector<double>& arrayX, std::vector<double>& a
         case 0: arrayX[i] = -15.0; arrayY[i] = -15.0; break;               
         case 1: arrayX[i] = GLOBAL_ISZX + 50.0; arrayY[i] = 256.0; break;  
         case 2: arrayX[i] = 256.0; arrayY[i] = GLOBAL_ISZY + 50.0; break;  
-        case 3: arrayX[i] = GLOBAL_ISZX + 100.0; arrayY[i] = GLOBAL_ISZY + 100.0; break; 
+        case 3: arrayX[i] = GLOBAL_ISZX + 100.0; arrayY[i] = GLOBAL_ISZY + 100.0; break;
         case 4: arrayX[i] = 256.0; arrayY[i] = 256.0; break;
         }
     }
@@ -156,29 +142,40 @@ void init_image(std::vector<int>& image) {
     }
 }
 
-void pack_pixels_for_fpga(int Nparticles,
-                          const std::vector<double>& arrayX,
-                          const std::vector<double>& arrayY,
-                          const std::vector<double>& objxy,
-                          const std::vector<int>& I,
-                          std::vector<int>& packed_I) {
-    int write_idx = 0;
-    for (int p = 0; p < Nparticles; p++) {
-        int px = shared_roundDouble(arrayX[p]);
-        int py = shared_roundDouble(arrayY[p]);
+// HW-RUN CHUNKING GATHER AND PACK
+void gather_and_pack_pixels_wide_chunk(int base_particle, 
+                                       int chunk_particles,
+                                       const std::vector<double>& arrayX,
+                                       const std::vector<double>& arrayY,
+                                       const std::vector<double>& objxy,
+                                       const std::vector<int>& I,
+                                       std::vector<wide_t, aligned_allocator<wide_t>>& packed_I_wide) {
+    
+    const int WORDS_PER_PARTICLE = PADDED_COUNT_ONES / INTS_PER_WORD; 
 
-        for (int m = 0; m < ACTUAL_COUNT_ONES; m++) {
-            int offY = shared_roundDouble(objxy[m * 2]);
-            int offX = shared_roundDouble(objxy[m * 2 + 1]);
-            long idx = std::labs(static_cast<long>(px + offX) * GLOBAL_ISZY * kNfr +
-                                 static_cast<long>(py + offY) * kNfr + kFrameIndex);
-            
-            if (idx >= GLOBAL_MAX_SIZE) idx = 0; 
-            packed_I[write_idx++] = I[idx];
-        }
+    for (int p = 0; p < chunk_particles; p++) {
+        int global_p = base_particle + p; 
+        int px = shared_roundDouble(arrayX[global_p]);
+        int py = shared_roundDouble(arrayY[global_p]);
 
-        for (int m = ACTUAL_COUNT_ONES; m < PADDED_COUNT_ONES; m++) {
-            packed_I[write_idx++] = 0;
+        for (int w = 0; w < WORDS_PER_PARTICLE; w++) {
+            wide_t pack = 0;
+            for (int i = 0; i < INTS_PER_WORD; i++) {
+                int m = w * INTS_PER_WORD + i;
+                uint32_t val = 0;
+
+                if (m < ACTUAL_COUNT_ONES) { 
+                    int offY = shared_roundDouble(objxy[m * 2]);
+                    int offX = shared_roundDouble(objxy[m * 2 + 1]);
+                    long idx = std::labs(static_cast<long>(px + offX) * GLOBAL_ISZY * kNfr +
+                                         static_cast<long>(py + offY) * kNfr + kFrameIndex);
+                    if (idx < GLOBAL_MAX_SIZE) {
+                        val = static_cast<uint32_t>(I[idx]);
+                    }
+                }
+                pack.range((i + 1) * INT_BITS - 1, i * INT_BITS) = static_cast<uint64_t>(val);
+            }
+            packed_I_wide[p * WORDS_PER_PARTICLE + w] = pack;
         }
     }
 }
@@ -202,7 +199,6 @@ void compute_reference(const std::vector<double>& arrayX,
             const int indY = py + offY;
             long idx = std::labs(static_cast<long>(indX) * GLOBAL_ISZY * kNfr +
                                  static_cast<long>(indY) * kNfr + kFrameIndex);
-            
             if (idx >= GLOBAL_MAX_SIZE) { idx = 0; }
 
             const int pix = image[static_cast<std::size_t>(idx)];
@@ -276,69 +272,81 @@ bool run_case(OpenClSession& session, const char* label, int particle_count, boo
     }
     init_image(image);
 
-    // Host Memory: Pack and Pad
-    int total_pixels_padded = particle_count * PADDED_COUNT_ONES;
-    std::vector<int> packed_I(total_pixels_padded, 0);
-    
-    pack_pixels_for_fpga(particle_count, arrayX, arrayY, objxy, image, packed_I);
-
-    // Allocate FPGA Aligned Memory
-    const std::size_t int_words = (total_pixels_padded + INTS_PER_WORD - 1) / INTS_PER_WORD;
-    const std::size_t out_words = (particle_count + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
-    
-    std::vector<wide_t, aligned_allocator<wide_t>> packed_I_wide(int_words, 0);
-    std::vector<wide_t, aligned_allocator<wide_t>> likelihood_wide(out_words, 0);
-
-    pack_ints_to_wide(packed_I, packed_I_wide);
-
     // Compute CPU Reference
     std::vector<double> likelihood_ref;
     compute_reference(arrayX, arrayY, objxy, image, likelihood_ref);
+    
+    // Accumulator for chunked results
+    std::vector<double> likelihood_hw_total(static_cast<std::size_t>(particle_count), 0.0);
+    double total_kernel_ms = 0.0;
 
-    // OpenCL Setup
-    cl_int err = CL_SUCCESS;
-    cl::Buffer buf_packed_I(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, 
-                            sizeof(wide_t) * int_words, packed_I_wide.data(), &err);
-    cl::Buffer buf_likelihood(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY, 
-                              sizeof(wide_t) * out_words, likelihood_wide.data(), &err);
+    std::cout << ">>> Running " << label << " in chunks of " << PARTICLE_CHUNK_SIZE << "...\n";
 
-    err = CL_SUCCESS;
-    err |= session.kernel.setArg(0, particle_count);
-    err |= session.kernel.setArg(1, buf_packed_I);
-    err |= session.kernel.setArg(2, buf_likelihood);
-    if (err != CL_SUCCESS) throw std::runtime_error("Failed to set kernel arguments");
+    // HW-RUN BATCHING LOGIC
+    for (int base = 0; base < particle_count; base += PARTICLE_CHUNK_SIZE) {
+        const int chunk_particles = std::min(PARTICLE_CHUNK_SIZE, particle_count - base);
 
-    err = session.queue.enqueueMigrateMemObjects({buf_packed_I}, 0);
-    err |= session.queue.finish();
+        const std::size_t int_words = (chunk_particles * PADDED_COUNT_ONES) / INTS_PER_WORD;
+        const std::size_t out_words = (chunk_particles + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
 
-    const timespec kernel_start = tic();
-    err = session.queue.enqueueTask(session.kernel);
-    err |= session.queue.finish();
-    const timespec kernel_end = tic();
+        std::vector<wide_t, aligned_allocator<wide_t>> packed_I_wide(int_words, 0);
+        std::vector<wide_t, aligned_allocator<wide_t>> likelihood_wide(out_words, 0);
+        std::vector<double> likelihood_hw_chunk(chunk_particles, 0.0);
 
-    if (err != CL_SUCCESS) throw std::runtime_error("Failed to execute kernel");
+        gather_and_pack_pixels_wide_chunk(base, chunk_particles, arrayX, arrayY, objxy, image, packed_I_wide);
 
-    const timespec kernel_elapsed = diff(kernel_start, kernel_end);
-    const double kernel_ms = static_cast<double>(kernel_elapsed.tv_sec) * 1.0e3 +
-                             static_cast<double>(kernel_elapsed.tv_nsec) * 1.0e-6;
+        cl_int err = CL_SUCCESS;
+        cl::Buffer buf_packed_I(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, 
+                                sizeof(wide_t) * int_words, packed_I_wide.data(), &err);
+        if (err != CL_SUCCESS) throw std::runtime_error("Failed to create buf_packed_I chunk");
 
-    err = session.queue.enqueueMigrateMemObjects({buf_likelihood}, CL_MIGRATE_MEM_OBJECT_HOST);
-    err |= session.queue.finish();
+        cl::Buffer buf_likelihood(session.context, CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY, 
+                                  sizeof(wide_t) * out_words, likelihood_wide.data(), &err);
+        if (err != CL_SUCCESS) throw std::runtime_error("Failed to create buf_likelihood chunk");
 
-    std::vector<double> likelihood_hw(static_cast<std::size_t>(particle_count), 0.0);
-    unpack_wide_to_doubles(likelihood_wide, likelihood_hw);
+        err = CL_SUCCESS;
+        err |= session.kernel.setArg(0, chunk_particles);
+        err |= session.kernel.setArg(1, buf_packed_I);
+        err |= session.kernel.setArg(2, buf_likelihood);
+        if (err != CL_SUCCESS) throw std::runtime_error("Failed to set kernel arguments");
 
+        err = session.queue.enqueueMigrateMemObjects({buf_packed_I}, 0);
+        err |= session.queue.finish();
+
+        const timespec kernel_start = tic();
+        err = session.queue.enqueueTask(session.kernel);
+        err |= session.queue.finish();
+        const timespec kernel_end = tic();
+
+        if (err != CL_SUCCESS) throw std::runtime_error("Failed to execute kernel");
+
+        const timespec kernel_elapsed = diff(kernel_start, kernel_end);
+        total_kernel_ms += static_cast<double>(kernel_elapsed.tv_sec) * 1.0e3 +
+                           static_cast<double>(kernel_elapsed.tv_nsec) * 1.0e-6;
+
+        err = session.queue.enqueueMigrateMemObjects({buf_likelihood}, CL_MIGRATE_MEM_OBJECT_HOST);
+        err |= session.queue.finish();
+
+        unpack_wide_to_doubles(likelihood_wide, likelihood_hw_chunk);
+        
+        // Append chunk to the final result array
+        for (int p = 0; p < chunk_particles; p++) {
+            likelihood_hw_total[base + p] = likelihood_hw_chunk[p];
+        }
+    }
+
+    // Validation
     bool pass = true;
     double max_abs_err = 0.0;
     const double tol = 1e-5;
 
-    for (std::size_t i = 0; i < likelihood_hw.size(); i++) {
-        const double err_abs = std::fabs(likelihood_hw[i] - likelihood_ref[i]);
+    for (std::size_t i = 0; i < likelihood_hw_total.size(); i++) {
+        const double err_abs = std::fabs(likelihood_hw_total[i] - likelihood_ref[i]);
         if (err_abs > max_abs_err) max_abs_err = err_abs;
         if (err_abs > tol) {
             pass = false;
             std::cout << "[ERROR] " << label << " mismatch at particle " << i << "\n"
-                      << "        HW = " << std::setprecision(15) << likelihood_hw[i] << "\n"
+                      << "        HW = " << std::setprecision(15) << likelihood_hw_total[i] << "\n"
                       << "       REF = " << likelihood_ref[i] << "\n"
                       << "   ABS_ERR = " << err_abs << "\n";
             break;
@@ -346,7 +354,7 @@ bool run_case(OpenClSession& session, const char* label, int particle_count, boo
     }
 
     std::cout << ">>> TEST: " << label << " (" << particle_count << " particles)\n";
-    std::cout << "    Compute Time  : " << std::fixed << std::setprecision(3) << kernel_ms << " ms\n";
+    std::cout << "    Compute Time  : " << std::fixed << std::setprecision(3) << total_kernel_ms << " ms\n";
     std::cout << "    Max Abs Error : " << std::setprecision(15) << max_abs_err << "\n";
     std::cout << "    Status        : " << (pass ? "PASS" : "FAIL") << "\n\n";
 
@@ -365,6 +373,7 @@ int main(int argc, char* argv[]) {
         OpenClSession session = open_session(argv[1]);
         bool pass = true;
         
+        // Emulation tests 100 particles (full 64-chunk + partial 36-chunk)
         pass &= run_case(session, "Interior_Points", NUM_PARTICLES, false);
         pass &= run_case(session, "Boundary_Points", NUM_PARTICLES, true);
 
