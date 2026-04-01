@@ -122,16 +122,19 @@ void build_objxy_disk(std::vector<double>& objxy) {
     }
 }
 
-void init_particles_interior(std::vector<double>& arrayX, std::vector<double>& arrayY) {
+void init_particles(std::vector<double>& arrayX, std::vector<double>& arrayY) {
     std::vector<int> seed(arrayX.size());
     for (std::size_t i = 0; i < seed.size(); i++) {
         seed[i] = 1337 * (i + 1);
     }
-    double center_x = GLOBAL_ISZY / 2.0;
-    double center_y = GLOBAL_ISZX / 2.0;
+
+    // SCATTERED WORKLOAD: 
+    // Distribute uniformly across the entire 4000x4000 image to force cache misses.
     for (std::size_t i = 0; i < arrayX.size(); i++) {
-        arrayX[i] = center_x + 1.0 + 5.0 * randn(seed, i);
-        arrayY[i] = center_y - 2.0 + 2.0 * randn(seed, i);
+        // randu() returns a float between 0.0 and 1.0. 
+        // Multiplying by GLOBAL_ISZY/X spreads them across the full bounds.
+        arrayX[i] = randu(seed, static_cast<int>(i)) * static_cast<double>(GLOBAL_ISZY);
+        arrayY[i] = randu(seed, static_cast<int>(i)) * static_cast<double>(GLOBAL_ISZX);
     }
 }
 
@@ -269,7 +272,7 @@ bool run_case(OpenClSession& session, const char* label, int particle_count, boo
     if (boundary_case) {
         init_particles_boundary(arrayX, arrayY);
     } else {
-        init_particles_interior(arrayX, arrayY);
+        init_particles(arrayX, arrayY);
     }
     init_image(image);
 
