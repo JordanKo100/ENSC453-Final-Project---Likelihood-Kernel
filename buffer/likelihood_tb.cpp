@@ -108,11 +108,11 @@ void init_particles(std::vector<double>& arrayX, std::vector<double>& arrayY, in
     for (int i = 0; i < Nparticles; i++) {
         seed[i] = 1337 * (i + 1);
     }
-    double center_x = TB_ISZY / 2.0;
-    double center_y = TB_ISZX / 2.0;
+    
+    // SCATTERED WORKLOAD: Distribute uniformly across the entire 4000x4000 image
     for (int i = 0; i < Nparticles; i++) {
-        arrayX[i] = center_x + 1.0 + 5.0 * randn(seed, i);
-        arrayY[i] = center_y - 2.0 + 2.0 * randn(seed, i);
+        arrayX[i] = randu(seed, i) * static_cast<double>(TB_ISZY);
+        arrayY[i] = randu(seed, i) * static_cast<double>(TB_ISZX);
     }
 }
 
@@ -129,16 +129,13 @@ bool run_case(const char* label,
 
     int total_pixels_padded = Nparticles * PADDED_COUNT_ONES;
     std::vector<int> packed_I(total_pixels_padded, 0);
-
     init_particles(arrayX, arrayY, Nparticles);
 
     pack_pixels_for_fpga(Nparticles, TB_ISZY, TB_NFR, TB_K, max_size,
                          arrayX, arrayY, std::vector<double>(objxy, objxy + ACTUAL_COUNT_ONES * 2),
                          std::vector<int>(I, I + max_size), packed_I);
-
     compute_reference(Nparticles, TB_ISZY, TB_NFR, TB_K, max_size,
                       arrayX.data(), arrayY.data(), objxy, I, likelihood_ref.data());
-
     auto start = std::chrono::high_resolution_clock::now();
 
     // Standard pointer pass
@@ -150,7 +147,6 @@ bool run_case(const char* label,
     bool pass = true;
     double max_abs_err = 0.0;
     const double tol = 1e-9;
-
     for (int i = 0; i < Nparticles; i++) {
         double err = std::fabs(likelihood_hw[i] - likelihood_ref[i]);
         if (err > max_abs_err) { max_abs_err = err; }
@@ -184,7 +180,6 @@ int main() {
     pass &= run_case("massive_interior_case", MAX_NPARTICLES, TB_MAX_SIZE, objxy.data(), I.data());
     pass &= run_case("small_boundary_case", 65, TB_MAX_SIZE, objxy.data(), I.data());
     pass &= run_case("clamp_case", 65, 37, objxy.data(), I.data());
-
     if (pass) {
         std::cout << "TEST PASSED\n";
         return 0;

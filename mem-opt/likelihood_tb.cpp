@@ -106,7 +106,6 @@ void build_objxy_disk(std::vector<double>& objxy) {
 }
 
 // CPU Gather: Looks up scattered pixels and saves them to a standard std::vector
-// CPU Gather: Looks up scattered pixels and saves them to a standard std::vector
 void pack_pixels_for_fpga(int Nparticles,
                           int IszY, int Nfr, int k, long max_size,
                           const std::vector<double>& arrayX,
@@ -131,7 +130,7 @@ void pack_pixels_for_fpga(int Nparticles,
 
         // 2. Pad the remaining slots with zeros up to 80 (PADDED_COUNT_ONES)
         for (int m = ACTUAL_COUNT_ONES; m < PADDED_COUNT_ONES; m++) {
-            packed_I[write_idx++] = 0; 
+            packed_I[write_idx++] = 0;
         }
     }
 }
@@ -170,11 +169,11 @@ void init_particles(std::vector<double>& arrayX, std::vector<double>& arrayY, in
     for (int i = 0; i < Nparticles; i++) {
         seed[i] = 1337 * (i + 1);
     }
-    double center_x = TB_ISZY / 2.0;
-    double center_y = TB_ISZX / 2.0;
+    
+    // SCATTERED WORKLOAD: Distribute uniformly across the entire 4000x4000 image
     for (int i = 0; i < Nparticles; i++) {
-        arrayX[i] = center_x + 1.0 + 5.0 * randn(seed, i);
-        arrayY[i] = center_y - 2.0 + 2.0 * randn(seed, i);
+        arrayX[i] = randu(seed, i) * static_cast<double>(TB_ISZY);
+        arrayY[i] = randu(seed, i) * static_cast<double>(TB_ISZX);
     }
 }
 
@@ -195,10 +194,8 @@ bool run_case(const char* label,
 
     // Wide array allocations
     int num_wide_doubles = (Nparticles + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
-    
     // FIX: Use the padded total for calculating wide int words
     int num_wide_ints = (total_pixels_padded + INTS_PER_WORD - 1) / INTS_PER_WORD;
-    
     std::vector<wide_t> likelihood_wide(num_wide_doubles, 0);
     std::vector<wide_t> packed_I_wide(num_wide_ints, 0);
 
@@ -245,31 +242,4 @@ bool run_case(const char* label,
 
     std::cout << label << "  Nparticles = " << Nparticles
               << "  elapsed = " << elapsed.count() << " s"
-              << "  max_abs_err = " << std::setprecision(12) << max_abs_err << "\n";
-    return pass;
-}
-
-int main() {
-    std::vector<double> objxy(PADDED_COUNT_ONES * 2, 0.0);
-    std::vector<int> I(TB_MAX_SIZE, 0);
-
-    build_objxy_disk(objxy);
-
-    for (long i = 0; i < TB_MAX_SIZE; i++) {
-        I[i] = 100 + (int)(i % 129);
-    }
-
-    bool pass = true;
-    
-    pass &= run_case("massive_interior_case", MAX_NPARTICLES, TB_MAX_SIZE, objxy.data(), I.data());
-    pass &= run_case("small_boundary_case", 65, TB_MAX_SIZE, objxy.data(), I.data());
-    pass &= run_case("clamp_case", 65, 37, objxy.data(), I.data());
-
-    if (pass) {
-        std::cout << "TEST PASSED\n";
-        return 0;
-    }
-
-    std::cout << "TEST FAILED\n";
-    return 1;
-}
+              << "  max_abs
