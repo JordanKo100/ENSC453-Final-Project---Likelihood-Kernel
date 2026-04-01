@@ -1,21 +1,22 @@
 #ifndef LIKELIHOOD_KERNEL_H
 #define LIKELIHOOD_KERNEL_H
 
-// Statically fixed to 69 for a disk mask of radius 5
-#define MAX_COUNT_ONES 69
-#define N_BUFFER_SIZE 64
+const int MAX_NPARTICLES = 1000000;
+const int N_BUFFER_SIZE = 256;
 
+#define PADDED_COUNT_ONES 80
+#define ACTUAL_COUNT_ONES 69
+
+#ifdef __cplusplus
 extern "C" {
+#endif
+
 void likelihood_kernel(int Nparticles,
-                       int IszY,
-                       int Nfr,
-                       int k,
-                       long max_size,
-                       const double* arrayX,
-                       const double* arrayY,
-                       const double* objxy,
-                       const int* I,
+                       const int* packed_I,
                        double* likelihood);
+
+#ifdef __cplusplus
 }
+#endif
 
 #endif
