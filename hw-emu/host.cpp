@@ -15,16 +15,18 @@
 #define CL_HPP_ENABLE_PROGRAM_CONSTRUCTION_FROM_ARRAY_COMPATIBILITY 1
 #include <CL/cl2.hpp>
 
+// Your header drives the sizing dynamically!
 #include "likelihood_kernel.h"
 #include "my_timer.h"
 
-// --- HW-EMU SCALED CONSTANTS ---
-// Reduced to 100 to test both a full tile (64) and a residual tile (36)
-#define NUM_PARTICLES 100
+// --- HW-EMU DYNAMIC CONSTANTS ---
 #define GLOBAL_ISZX 512
 #define GLOBAL_ISZY 512
 #define GLOBAL_MAX_SIZE (GLOBAL_ISZX * GLOBAL_ISZY * 1) 
-#define PARTICLE_CHUNK_SIZE 64 // Matches N_BUFFER_SIZE to test chunking logic in emulation
+
+// The host chunk MUST be larger than N_BUFFER_SIZE to force the 
+// hardware's Tile_loop to iterate and trigger Ping-Pong overlap.
+#define EMULATION_CHUNK_SIZE (N_BUFFER_SIZE * 4) 
 
 const long PRNG_M = 2147483647;
 const int PRNG_A = 1103515245;
@@ -87,14 +89,6 @@ double randu(std::vector<int>& seed, int index) {
     return std::fabs(seed[index] / static_cast<double>(PRNG_M));
 }
 
-double randn(std::vector<int>& seed, int index) {
-    double u = randu(seed, index);
-    double v = randu(seed, index);
-    double cosine = std::cos(2.0 * M_PI * v);
-    double rt = -2.0 * std::log(u);
-    return std::sqrt(rt) * cosine;
-}
-
 void build_objxy_disk(std::vector<double>& objxy) {
     int radius = 5;
     int current_point = 0;
@@ -142,7 +136,6 @@ void init_image(std::vector<int>& image) {
     }
 }
 
-// HW-RUN CHUNKING GATHER AND PACK
 void gather_and_pack_pixels_wide_chunk(int base_particle, 
                                        int chunk_particles,
                                        const std::vector<double>& arrayX,
@@ -252,9 +245,6 @@ OpenClSession open_session(const std::string& binary_file) {
     cl::Kernel kernel(program, "likelihood_kernel", &err);
     if (err != CL_SUCCESS) throw std::runtime_error("Failed to create likelihood_kernel");
 
-    std::cout << "\n======================================================\n";
-    std::cout << "[INFO] FPGA Device Initialized: " << device.getInfo<CL_DEVICE_NAME>() << "\n";
-    std::cout << "======================================================\n\n";
     return {context, queue, kernel};
 }
 
@@ -276,15 +266,14 @@ bool run_case(OpenClSession& session, const char* label, int particle_count, boo
     std::vector<double> likelihood_ref;
     compute_reference(arrayX, arrayY, objxy, image, likelihood_ref);
     
-    // Accumulator for chunked results
     std::vector<double> likelihood_hw_total(static_cast<std::size_t>(particle_count), 0.0);
     double total_kernel_ms = 0.0;
 
-    std::cout << ">>> Running " << label << " in chunks of " << PARTICLE_CHUNK_SIZE << "...\n";
+    std::cout << ">>> Running [" << label << "] Total Particles: " << particle_count << "\n";
 
-    // HW-RUN BATCHING LOGIC
-    for (int base = 0; base < particle_count; base += PARTICLE_CHUNK_SIZE) {
-        const int chunk_particles = std::min(PARTICLE_CHUNK_SIZE, particle_count - base);
+    // Host loops using EMULATION_CHUNK_SIZE
+    for (int base = 0; base < particle_count; base += EMULATION_CHUNK_SIZE) {
+        const int chunk_particles = std::min(EMULATION_CHUNK_SIZE, particle_count - base);
 
         const std::size_t int_words = (chunk_particles * PADDED_COUNT_ONES) / INTS_PER_WORD;
         const std::size_t out_words = (chunk_particles + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
@@ -329,7 +318,6 @@ bool run_case(OpenClSession& session, const char* label, int particle_count, boo
 
         unpack_wide_to_doubles(likelihood_wide, likelihood_hw_chunk);
         
-        // Append chunk to the final result array
         for (int p = 0; p < chunk_particles; p++) {
             likelihood_hw_total[base + p] = likelihood_hw_chunk[p];
         }
@@ -345,7 +333,7 @@ bool run_case(OpenClSession& session, const char* label, int particle_count, boo
         if (err_abs > max_abs_err) max_abs_err = err_abs;
         if (err_abs > tol) {
             pass = false;
-            std::cout << "[ERROR] " << label << " mismatch at particle " << i << "\n"
+            std::cout << "[ERROR] mismatch at particle " << i << "\n"
                       << "        HW = " << std::setprecision(15) << likelihood_hw_total[i] << "\n"
                       << "       REF = " << likelihood_ref[i] << "\n"
                       << "   ABS_ERR = " << err_abs << "\n";
@@ -353,7 +341,6 @@ bool run_case(OpenClSession& session, const char* label, int particle_count, boo
         }
     }
 
-    std::cout << ">>> TEST: " << label << " (" << particle_count << " particles)\n";
     std::cout << "    Compute Time  : " << std::fixed << std::setprecision(3) << total_kernel_ms << " ms\n";
     std::cout << "    Max Abs Error : " << std::setprecision(15) << max_abs_err << "\n";
     std::cout << "    Status        : " << (pass ? "PASS" : "FAIL") << "\n\n";
@@ -373,9 +360,26 @@ int main(int argc, char* argv[]) {
         OpenClSession session = open_session(argv[1]);
         bool pass = true;
         
-        // Emulation tests 100 particles (full 64-chunk + partial 36-chunk)
-        pass &= run_case(session, "Interior_Points", NUM_PARTICLES, false);
-        pass &= run_case(session, "Boundary_Points", NUM_PARTICLES, true);
+        std::cout << "\n======================================================\n";
+        std::cout << "  STARTING SCALABLE HARDWARE EMULATION TESTS\n";
+        std::cout << "  Hardware N_BUFFER_SIZE  : " << N_BUFFER_SIZE << "\n";
+        std::cout << "  Host Chunking Threshold : " << EMULATION_CHUNK_SIZE << "\n";
+        std::cout << "======================================================\n\n";
+
+        // TEST 1: Exact Alignment
+        // Tests exactly 4 full tiles (e.g., 512 particles if buffer is 128). 
+        // Proves standard dataflow loop overlap works without buffer overruns.
+        pass &= run_case(session, "1. Exact_Aligned_Tiles", N_BUFFER_SIZE * 4, false);
+
+        // TEST 2: Unaligned Tail + Boundaries
+        // Tests 4 full tiles, plus 1 partial tile (e.g., 554 particles). 
+        // Uses the boundary coordinates to test out-of-bounds zero padding.
+        pass &= run_case(session, "2. Unaligned_Tail_with_Boundary", (N_BUFFER_SIZE * 4) + (N_BUFFER_SIZE / 3), true);
+
+        // TEST 3: Multi-Chunk Stress Test
+        // Tests a massive amount that exceeds the Host's EMULATION_CHUNK_SIZE.
+        // Proves that multiple host transfers and kernel restarts work cleanly.
+        pass &= run_case(session, "3. Multi_Chunk_Stress_Test", (EMULATION_CHUNK_SIZE * 2) + (N_BUFFER_SIZE / 2) + 17, false);
 
         if (pass) {
             std::cout << "======================================================\n";
