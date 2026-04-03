@@ -147,25 +147,25 @@ void compute_reference(int Nparticles,
         double sum = 0.0;
 
         for (int y = 0; y < ACTUAL_COUNT_ONES; y++) {
-            const int offY = shared_roundDouble(objxy[static_cast<std::size_t>(y) * 2]);
-            const int offX = shared_roundDouble(objxy[static_cast<std::size_t>(y) * 2 + 1]);
+            const int offY = tb_roundDouble(objxy[static_cast<std::size_t>(y) * 2]);
+            const int offX = tb_roundDouble(objxy[static_cast<std::size_t>(y) * 2 + 1]);
             const int indX = px + offX;
             const int indY = py + offY;
-            long idx = std::labs(static_cast<long>(indX) * GLOBAL_ISZY * kNfr +
-                                 static_cast<long>(indY) * kNfr + kFrameIndex);
             
-            // FIX: Pad out of bounds with 0, do not read image[0]
-            int pix = 0;
-            if (idx < GLOBAL_MAX_SIZE) { 
-                pix = image[static_cast<std::size_t>(idx)]; 
+            long idx = std::labs(static_cast<long>(indX) * IszY * Nfr +
+                                 static_cast<long>(indY) * Nfr + k);
+            
+            // Revert to original Rodinia logic: Out-of-bounds clamps to index 0.
+            if (idx >= max_size) {
+                idx = 0; 
             }
+            int pix = I[static_cast<std::size_t>(idx)];
 
             const int a = pix - 100;
             const int b = pix - 228;
             sum += (static_cast<double>(a * a) - static_cast<double>(b * b)) / 50.0;
         }
         
-        // FIX 2: Divide by the actual count (69), not the padded count (80)
         likelihood_ref[x] = sum / (double)ACTUAL_COUNT_ONES;
     }
 }
