@@ -29,20 +29,20 @@ void compute_likelihood(const int buffer_pixels[N_BUFFER_SIZE][PADDED_COUNT_ONES
                         double buffer_likelihood[N_BUFFER_SIZE],
                         int activeParticles) {
     #pragma HLS INLINE off
-    const double inv_count = 1.0 / (double)ACTUAL_COUNT_ONES;
-    const double scale = (kPixelScaleNum / kPixelDen) * inv_count;
-    const double bias = kPixelBiasNum / kPixelDen;
 
     computeLikelihood:
     for (int x = 0; x < activeParticles; x++) {
         #pragma HLS LOOP_TRIPCOUNT min=1 max=N_BUFFER_SIZE
-        int pixel_sum = 0;
+        double likelihood_sum = 0.0;
         
         accumuLikelihood:
         for (int y = 0; y < ACTUAL_COUNT_ONES; y++) {
-            pixel_sum += buffer_pixels[x][y];
+            int pixel_val = buffer_pixels[x][y];
+            
+            likelihood_sum += (pow((pixel_val - 100), 2) - pow((pixel_val - 228), 2)) / 50.0;
         }
-        buffer_likelihood[x] = scale * (double)pixel_sum - bias;
+        
+        buffer_likelihood[x] = likelihood_sum / (double)ACTUAL_COUNT_ONES;
     }
 }
 
