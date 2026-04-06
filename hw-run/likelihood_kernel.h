@@ -9,7 +9,7 @@
 #define DOUBLES_PER_WORD (AXI_BITS / DOUBLE_BITS) // 8 doubles
 #define INTS_PER_WORD (AXI_BITS / INT_BITS)       // 16 ints
 
-const int MAX_NPARTICLES = 3000000;
+const int NUM_NPARTICLES = 3000000;
 const int N_BUFFER_SIZE = 128;
 
 #define PADDED_COUNT_ONES 80
@@ -17,8 +17,8 @@ const int N_BUFFER_SIZE = 128;
 
 #define WORDS_PER_TILE (N_BUFFER_SIZE / DOUBLES_PER_WORD)
 
-
 static_assert(N_BUFFER_SIZE % WORDS_PER_TILE == 0, "N_BUFFER_SIZE must align with 512-bit ports!");
+static_assert(PADDED_COUNT_ONES % INTS_PER_WORD == 0, "PADDED_COUNT_ONES must be a multiple of 16!");
 
 typedef ap_uint<AXI_BITS> wide_t;
 

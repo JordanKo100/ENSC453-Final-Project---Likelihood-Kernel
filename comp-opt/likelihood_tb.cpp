@@ -1,218 +1,190 @@
-#include <iostream>
-#include <iomanip>
-#include <cmath>
 #include <chrono>
-#include <vector>
+#include <cmath>
 #include <cstdlib>
+#include <cstdint>
+#include <iomanip>
+#include <iostream>
+#include <vector>
+
 #include "likelihood_kernel.h"
 
-// -----------------------------------------------------------------------------
-// Better testbench for likelihood_kernel
-// - Uses a realistic disk-style objxy for radius = 5
-// - Uses varied particle positions
-// - Uses varied image contents
-// - Computes a software reference and compares against kernel output
-// -----------------------------------------------------------------------------
+#define TB_ISZX 4000
+#define TB_ISZY 4000
+#define TB_NFR 1
+#define TB_K 0
+#define TB_MAX_SIZE 16000000
 
-#define TB_NPARTICLES 64
-#define TB_ISZY       480
-#define TB_NFR        3
-#define TB_K          1
-#define TB_MAX_SIZE   1000000
-
-// Match your kernel capacity
-#define TB_MAX_COUNTONES 80
+const long M = 2147483647;
+const int A = 1103515245;
+const int C = 12345;
 
 inline int tb_roundDouble(double value) {
-    return static_cast<int>(value + 0.5);
+    return static_cast<int>(value + ((value >= 0.0) ? 0.5 : -0.5));
 }
 
-// Build realistic objxy from a disk of radius 5, matching the original code style.
-// neighbors[2*i]     = y offset
-// neighbors[2*i + 1] = x offset
-int build_objxy_radius5(double* objxy) {
-    const int radius = 5;
-    const int diameter = radius * 2 - 1;
-    const int center = radius - 1;
+double randu(std::vector<int>& seed, int index) {
+    long long num = (long long)A * seed[index] + C;
+    seed[index] = num % M;
+    return std::fabs(seed[index] / ((double)M));
+}
 
-    int countOnes = 0;
+double randn(std::vector<int>& seed, int index) {
+    double u = randu(seed, index);
+    double v = randu(seed, index);
+    double cosine = std::cos(2.0 * M_PI * v);
+    double rt = -2.0 * std::log(u);
+    return std::sqrt(rt) * cosine;
+}
 
-    for (int x = 0; x < diameter; x++) {
-        for (int y = 0; y < diameter; y++) {
-            double distance = std::sqrt(
-                std::pow((double)(x - center), 2.0) +
-                std::pow((double)(y - center), 2.0)
-            );
-
-            if (distance < radius) {
-                objxy[countOnes * 2]     = (double)(y - center); // y offset
-                objxy[countOnes * 2 + 1] = (double)(x - center); // x offset
-                countOnes++;
+void build_objxy_disk(std::vector<double>& objxy) {
+    int radius = 5;
+    int current_point = 0;
+    for (int x = -radius + 1; x < radius; x++) {
+        for (int y = -radius + 1; y < radius; y++) {
+            if (std::sqrt(x * x + y * y) < radius) {
+                objxy[current_point * 2] = (double)y;
+                objxy[current_point * 2 + 1] = (double)x;
+                current_point++;
             }
         }
     }
-
-    return countOnes; // should be 69 for radius 5
 }
 
-void compute_reference(
-    int Nparticles,
-    int countOnes,
-    int IszY,
-    int Nfr,
-    int k,
-    long max_size,
-    const double* arrayX,
-    const double* arrayY,
-    const double* objxy,
-    const int* I,
-    double* likelihood_ref
-) {
+void pack_pixels_for_fpga(int Nparticles,
+                          int IszY, int Nfr, int k, long max_size,
+                          const std::vector<double>& arrayX,
+                          const std::vector<double>& arrayY,
+                          const std::vector<double>& objxy,
+                          const std::vector<int>& I,
+                          std::vector<int>& packed_I) {
+    int write_idx = 0;
+    for (int p = 0; p < Nparticles; p++) {
+        int px = tb_roundDouble(arrayX[p]);
+        int py = tb_roundDouble(arrayY[p]);
+
+        for (int m = 0; m < ACTUAL_COUNT_ONES; m++) {
+            int offY = tb_roundDouble(objxy[m * 2]);
+            int offX = tb_roundDouble(objxy[m * 2 + 1]);
+            long idx = std::abs((long)(px + offX) * IszY * Nfr + (long)(py + offY) * Nfr + k);
+            if (idx >= max_size) idx = 0; 
+            
+            packed_I[write_idx++] = I[idx];
+        }
+
+        for (int m = ACTUAL_COUNT_ONES; m < PADDED_COUNT_ONES; m++) {
+            packed_I[write_idx++] = 0;
+        }
+    }
+}
+
+void compute_reference(int Nparticles,
+                       int IszY, int Nfr, int k, long max_size,
+                       const double* arrayX, const double* arrayY,
+                       const double* objxy, const int* I,
+                       double* likelihood_ref) {
     for (int x = 0; x < Nparticles; x++) {
         int px = tb_roundDouble(arrayX[x]);
         int py = tb_roundDouble(arrayY[x]);
         double sum = 0.0;
 
-        for (int y = 0; y < countOnes; y++) {
+        for (int y = 0; y < ACTUAL_COUNT_ONES; y++) {
             int offY = tb_roundDouble(objxy[y * 2]);
             int offX = tb_roundDouble(objxy[y * 2 + 1]);
-
-            int indX = px + offX;
-            int indY = py + offY;
-
-            int idx = std::abs(indX * IszY * Nfr + indY * Nfr + k);
-            if (idx >= max_size) {
-                idx = 0;
-            }
+            long idx = std::abs((long)(px + offX) * IszY * Nfr + (long)(py + offY) * Nfr + k);
+            if (idx >= max_size) idx = 0;
 
             int pix = I[idx];
             int a = pix - 100;
             int b = pix - 228;
-
             sum += ((double)(a * a) - (double)(b * b)) / 50.0;
         }
-
-        likelihood_ref[x] = sum / (double)countOnes;
+        
+        likelihood_ref[x] = sum / (double)ACTUAL_COUNT_ONES;
     }
 }
 
-int main() {
-    static double arrayX[TB_NPARTICLES];
-    static double arrayY[TB_NPARTICLES];
-    static double objxy[TB_MAX_COUNTONES * 2];
-    static int    I[TB_MAX_SIZE];
-    static double likelihood_hw[TB_NPARTICLES];
-    static double likelihood_ref[TB_NPARTICLES];
-
-    // -------------------------------------------------------------------------
-    // Build realistic objxy for radius=5
-    // -------------------------------------------------------------------------
-    int countOnes = build_objxy_radius5(objxy);
-
-    if (countOnes > TB_MAX_COUNTONES) {
-        std::cerr << "ERROR: countOnes = " << countOnes
-                  << " exceeds TB_MAX_COUNTONES = " << TB_MAX_COUNTONES << "\n";
-        return 1;
+void init_particles(std::vector<double>& arrayX, std::vector<double>& arrayY, int Nparticles) {
+    std::vector<int> seed(Nparticles);
+    for (int i = 0; i < Nparticles; i++) {
+        seed[i] = 1337 * (i + 1);
     }
-
-    std::cout << "countOnes = " << countOnes << std::endl;
-
-    // -------------------------------------------------------------------------
-    // Initialize particles with varied positions
-    // Keep them away from extreme edges to reduce accidental clamping
-    // -------------------------------------------------------------------------
-    for (int i = 0; i < TB_NPARTICLES; i++) {
-        arrayX[i] = 80.0 + (i % 16) * 3.25;   // varying x positions
-        arrayY[i] = 120.0 + (i % 8) * 2.75;   // varying y positions
-        likelihood_hw[i] = 0.0;
-        likelihood_ref[i] = 0.0;
+    
+    // SCATTERED WORKLOAD: Distribute uniformly across the entire 4000x4000 image
+    for (int i = 0; i < Nparticles; i++) {
+        arrayX[i] = randu(seed, i) * static_cast<double>(TB_ISZY);
+        arrayY[i] = randu(seed, i) * static_cast<double>(TB_ISZX);
     }
+}
 
-    // -------------------------------------------------------------------------
-    // Initialize image with varied contents
-    // This is still synthetic, but much better than filling everything with 120
-    // -------------------------------------------------------------------------
-    for (long i = 0; i < TB_MAX_SIZE; i++) {
-        I[i] = 100 + (i % 129); // values cycle from 100 to 228
-    }
+bool run_case(const char* label,
+              int Nparticles,
+              long max_size,
+              const double* objxy,
+              const int* I) 
+{
+    std::vector<double> arrayX(Nparticles, 0.0);
+    std::vector<double> arrayY(Nparticles, 0.0);
+    std::vector<double> likelihood_hw(Nparticles, 0.0);
+    std::vector<double> likelihood_ref(Nparticles, 0.0);
 
-    // -------------------------------------------------------------------------
-    // Compute software reference
-    // -------------------------------------------------------------------------
-    compute_reference(
-        TB_NPARTICLES,
-        countOnes,
-        TB_ISZY,
-        TB_NFR,
-        TB_K,
-        TB_MAX_SIZE,
-        arrayX,
-        arrayY,
-        objxy,
-        I,
-        likelihood_ref
-    );
+    int total_pixels_padded = Nparticles * PADDED_COUNT_ONES;
+    std::vector<int> packed_I(total_pixels_padded, 0);
+    init_particles(arrayX, arrayY, Nparticles);
 
-    // -------------------------------------------------------------------------
-    // Call kernel
-    // -------------------------------------------------------------------------
+    pack_pixels_for_fpga(Nparticles, TB_ISZY, TB_NFR, TB_K, max_size,
+                         arrayX, arrayY, std::vector<double>(objxy, objxy + ACTUAL_COUNT_ONES * 2),
+                         std::vector<int>(I, I + max_size), packed_I);
+    compute_reference(Nparticles, TB_ISZY, TB_NFR, TB_K, max_size,
+                      arrayX.data(), arrayY.data(), objxy, I, likelihood_ref.data());
     auto start = std::chrono::high_resolution_clock::now();
 
-    likelihood_kernel(
-        TB_NPARTICLES,
-        countOnes,
-        TB_ISZY,
-        TB_NFR,
-        TB_K,
-        TB_MAX_SIZE,
-        arrayX,
-        arrayY,
-        objxy,
-        I,
-        likelihood_hw
-    );
+    // Standard pointer pass
+    likelihood_kernel(Nparticles, packed_I.data(), likelihood_hw.data());
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
 
-    std::cout << "Kernel execution time: " << elapsed.count() << " s\n";
-
-    // -------------------------------------------------------------------------
-    // Compare results
-    // -------------------------------------------------------------------------
     bool pass = true;
-    const double tol = 1e-9;
     double max_abs_err = 0.0;
-
-    for (int i = 0; i < TB_NPARTICLES; i++) {
+    const double tol = 1e-9;
+    for (int i = 0; i < Nparticles; i++) {
         double err = std::fabs(likelihood_hw[i] - likelihood_ref[i]);
-        if (err > max_abs_err) {
-            max_abs_err = err;
-        }
-
+        if (err > max_abs_err) { max_abs_err = err; }
         if (err > tol) {
             pass = false;
-            std::cout << "Mismatch at particle " << i
+            std::cout << label << " mismatch at particle " << i
                       << ": HW = " << std::setprecision(12) << likelihood_hw[i]
                       << ", REF = " << likelihood_ref[i]
                       << ", ABS_ERR = " << err << "\n";
+            break;
         }
     }
 
-    std::cout << "Max absolute error: " << std::setprecision(12)
-              << max_abs_err << "\n";
+    std::cout << label << "  Nparticles = " << Nparticles
+              << "  elapsed = " << elapsed.count() << " s"
+              << "  max_abs_err = " << std::setprecision(12) << max_abs_err << "\n";
+    return pass;
+}
 
-    for (int i = 0; i < 5; i++) {
-        std::cout << "particle[" << i << "]  HW = "
-                  << std::setprecision(12) << likelihood_hw[i]
-                  << "   REF = " << likelihood_ref[i] << "\n";
+int main() {
+    std::vector<double> objxy(PADDED_COUNT_ONES * 2, 0.0);
+    std::vector<int> I(TB_MAX_SIZE, 0);
+
+    build_objxy_disk(objxy);
+    for (long i = 0; i < TB_MAX_SIZE; i++) {
+        I[i] = 100 + (int)(i % 129);
     }
 
+    bool pass = true;
+    
+    pass &= run_case("massive_interior_case", MAX_NPARTICLES, TB_MAX_SIZE, objxy.data(), I.data());
+    pass &= run_case("small_boundary_case", 65, TB_MAX_SIZE, objxy.data(), I.data());
+    pass &= run_case("clamp_case", 65, 37, objxy.data(), I.data());
     if (pass) {
         std::cout << "TEST PASSED\n";
         return 0;
-    } else {
-        std::cout << "TEST FAILED\n";
-        return 1;
     }
+
+    std::cout << "TEST FAILED\n";
+    return 1;
 }

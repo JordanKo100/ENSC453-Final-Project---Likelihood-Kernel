@@ -14,12 +14,67 @@
 #define TB_K 0
 #define TB_MAX_SIZE 16000000
 
-const long M = 2147483647;
+const long M = 2147483647; 
 const int A = 1103515245;
 const int C = 12345;
 
 inline int tb_roundDouble(double value) {
     return static_cast<int>(value + ((value >= 0.0) ? 0.5 : -0.5));
+}
+
+inline double bits_to_double_tb(uint64_t bits) {
+    union { uint64_t u; double d; } conv;
+    conv.u = bits;
+    return conv.d;
+}
+
+inline uint64_t double_to_bits_tb(double val) {
+    union { uint64_t u; double d; } conv;
+    conv.d = val;
+    return conv.u;
+}
+
+// Packs doubles into 512-bit words (8 doubles per word)
+void pack_doubles_to_wide(const std::vector<double>& in, std::vector<wide_t>& out, int count) {
+    const int words = (count + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
+    for (int w = 0; w < words; w++) {
+        wide_t pack = 0;
+        for (int d = 0; d < DOUBLES_PER_WORD; d++) {
+            const int idx = w * DOUBLES_PER_WORD + d;
+            const double val = (idx < count) ? in[idx] : 0.0;
+            pack.range((d + 1) * DOUBLE_BITS - 1, d * DOUBLE_BITS) = double_to_bits_tb(val);
+        }
+        out[w] = pack;
+    }
+}
+
+// Unpacks 512-bit words into doubles
+void unpack_wide_to_doubles(const std::vector<wide_t>& in, std::vector<double>& out, int count) {
+    const int words = (count + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
+    for (int w = 0; w < words; w++) {
+        wide_t pack = in[w];
+        for (int d = 0; d < DOUBLES_PER_WORD; d++) {
+            const int idx = w * DOUBLES_PER_WORD + d;
+            if (idx < count) {
+                const uint64_t bits = (uint64_t)pack.range((d + 1) * DOUBLE_BITS - 1, d * DOUBLE_BITS);
+                out[idx] = bits_to_double_tb(bits);
+            }
+        }
+    }
+}
+
+// NEW: Packs integers into 512-bit words (16 ints per word)
+void pack_ints_to_wide(const std::vector<int>& in, std::vector<wide_t>& out, int count) {
+    const int words = (count + INTS_PER_WORD - 1) / INTS_PER_WORD;
+    for (int w = 0; w < words; w++) {
+        wide_t pack = 0;
+        for (int i = 0; i < INTS_PER_WORD; i++) {
+            const int idx = w * INTS_PER_WORD + i;
+            const uint32_t val = (idx < count) ? (uint32_t)in[idx] : 0;
+            pack.range((i + 1) * INT_BITS - 1, i * INT_BITS) = val;
+        }
+        out[w] = pack;
+    }
 }
 
 double randu(std::vector<int>& seed, int index) {
@@ -50,6 +105,7 @@ void build_objxy_disk(std::vector<double>& objxy) {
     }
 }
 
+// CPU Gather: Looks up scattered pixels and saves them to a standard std::vector
 void pack_pixels_for_fpga(int Nparticles,
                           int IszY, int Nfr, int k, long max_size,
                           const std::vector<double>& arrayX,
@@ -62,6 +118,7 @@ void pack_pixels_for_fpga(int Nparticles,
         int px = tb_roundDouble(arrayX[p]);
         int py = tb_roundDouble(arrayY[p]);
 
+        // 1. Pack the actual 69 valid pixels
         for (int m = 0; m < ACTUAL_COUNT_ONES; m++) {
             int offY = tb_roundDouble(objxy[m * 2]);
             int offX = tb_roundDouble(objxy[m * 2 + 1]);
@@ -71,12 +128,14 @@ void pack_pixels_for_fpga(int Nparticles,
             packed_I[write_idx++] = I[idx];
         }
 
+        // 2. Pad the remaining slots with zeros up to 80 (PADDED_COUNT_ONES)
         for (int m = ACTUAL_COUNT_ONES; m < PADDED_COUNT_ONES; m++) {
             packed_I[write_idx++] = 0;
         }
     }
 }
 
+// CPU Validation
 void compute_reference(int Nparticles,
                        int IszY, int Nfr, int k, long max_size,
                        const double* arrayX, const double* arrayY,
@@ -88,15 +147,23 @@ void compute_reference(int Nparticles,
         double sum = 0.0;
 
         for (int y = 0; y < ACTUAL_COUNT_ONES; y++) {
-            int offY = tb_roundDouble(objxy[y * 2]);
-            int offX = tb_roundDouble(objxy[y * 2 + 1]);
-            long idx = std::abs((long)(px + offX) * IszY * Nfr + (long)(py + offY) * Nfr + k);
-            if (idx >= max_size) idx = 0;
+            const int offY = tb_roundDouble(objxy[static_cast<std::size_t>(y) * 2]);
+            const int offX = tb_roundDouble(objxy[static_cast<std::size_t>(y) * 2 + 1]);
+            const int indX = px + offX;
+            const int indY = py + offY;
+            
+            long idx = std::labs(static_cast<long>(indX) * IszY * Nfr +
+                                 static_cast<long>(indY) * Nfr + k);
+            
+            // Revert to original Rodinia logic: Out-of-bounds clamps to index 0.
+            if (idx >= max_size) {
+                idx = 0; 
+            }
+            int pix = I[static_cast<std::size_t>(idx)];
 
-            int pix = I[idx];
-            int a = pix - 100;
-            int b = pix - 228;
-            sum += ((double)(a * a) - (double)(b * b)) / 50.0;
+            const int a = pix - 100;
+            const int b = pix - 228;
+            sum += (static_cast<double>(a * a) - static_cast<double>(b * b)) / 50.0;
         }
         
         likelihood_ref[x] = sum / (double)ACTUAL_COUNT_ONES;
@@ -127,26 +194,45 @@ bool run_case(const char* label,
     std::vector<double> likelihood_hw(Nparticles, 0.0);
     std::vector<double> likelihood_ref(Nparticles, 0.0);
 
+    // FIX: Use PADDED_COUNT_ONES for memory allocation sizing
     int total_pixels_padded = Nparticles * PADDED_COUNT_ONES;
     std::vector<int> packed_I(total_pixels_padded, 0);
+
+    // Wide array allocations
+    int num_wide_doubles = (Nparticles + DOUBLES_PER_WORD - 1) / DOUBLES_PER_WORD;
+    // FIX: Use the padded total for calculating wide int words
+    int num_wide_ints = (total_pixels_padded + INTS_PER_WORD - 1) / INTS_PER_WORD;
+    std::vector<wide_t> likelihood_wide(num_wide_doubles, 0);
+    std::vector<wide_t> packed_I_wide(num_wide_ints, 0);
+
     init_particles(arrayX, arrayY, Nparticles);
 
+    // 1. Gather scattered reads (now includes zero padding)
     pack_pixels_for_fpga(Nparticles, TB_ISZY, TB_NFR, TB_K, max_size,
                          arrayX, arrayY, std::vector<double>(objxy, objxy + ACTUAL_COUNT_ONES * 2),
                          std::vector<int>(I, I + max_size), packed_I);
+
+    // 2. Pack 32-bit ints into 512-bit words
+    pack_ints_to_wide(packed_I, packed_I_wide, total_pixels_padded);
+
+    // CPU Reference Calculation
     compute_reference(Nparticles, TB_ISZY, TB_NFR, TB_K, max_size,
                       arrayX.data(), arrayY.data(), objxy, I, likelihood_ref.data());
+
     auto start = std::chrono::high_resolution_clock::now();
 
-    // Standard pointer pass
-    likelihood_kernel(Nparticles, packed_I.data(), likelihood_hw.data());
+    // The Ultimate Pipeline Call
+    likelihood_kernel(Nparticles, packed_I_wide.data(), likelihood_wide.data());
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
 
+    unpack_wide_to_doubles(likelihood_wide, likelihood_hw, Nparticles);
+
     bool pass = true;
     double max_abs_err = 0.0;
     const double tol = 1e-9;
+
     for (int i = 0; i < Nparticles; i++) {
         double err = std::fabs(likelihood_hw[i] - likelihood_ref[i]);
         if (err > max_abs_err) { max_abs_err = err; }
@@ -171,6 +257,7 @@ int main() {
     std::vector<int> I(TB_MAX_SIZE, 0);
 
     build_objxy_disk(objxy);
+
     for (long i = 0; i < TB_MAX_SIZE; i++) {
         I[i] = 100 + (int)(i % 129);
     }
@@ -180,6 +267,7 @@ int main() {
     pass &= run_case("massive_interior_case", MAX_NPARTICLES, TB_MAX_SIZE, objxy.data(), I.data());
     pass &= run_case("small_boundary_case", 65, TB_MAX_SIZE, objxy.data(), I.data());
     pass &= run_case("clamp_case", 65, 37, objxy.data(), I.data());
+
     if (pass) {
         std::cout << "TEST PASSED\n";
         return 0;
